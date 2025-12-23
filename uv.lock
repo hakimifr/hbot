@@ -1,0 +1,55 @@
+version = 1
+revision = 1
+requires-python = ">=3.14"
+
+[[package]]
+name = "hbot"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "jsondb-hakimifr" },
+    { name = "kurigram" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "jsondb-hakimifr", specifier = ">=0.1.0" },
+    { name = "kurigram", specifier = ">=2.2.15" },
+]
+
+[[package]]
+name = "jsondb-hakimifr"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/96/8f/f06d88975abf046c85699bec88ac805bf48b6a997b651c0bdc2e2d228be9/jsondb_hakimifr-0.1.0.tar.gz", hash = "sha256:92f933359b225b5993e397875a8053b7e0e04433258a54fa39c6a8b7f91fee5b", size = 8830 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/08/06/a07afd740f97260e9944e67c4c46ebc8fc155acf3a5ce59659a435bf31aa/jsondb_hakimifr-0.1.0-py3-none-any.whl", hash = "sha256:5bac1e5f9d7feb699fe219cbf1f9d071eaaf2023b38c9de3760a5028fce9a8c5", size = 8635 },
+]
+
+[[package]]
+name = "kurigram"
+version = "2.2.15"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyaes" },
+    { name = "pysocks" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/46/8e/2de56937e0562bbfca6de03ecfe13f926b1f25f7afb71da268cc964fe7a9/kurigram-2.2.15.tar.gz", hash = "sha256:4e777ef2809d0883a318299374438a408d71ecb4ddef597b7292b7ffc332955a", size = 531449 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c7/95/4461a9f3e7ab0c03dcacce67e12bb759b04963b32fb1ae1518ac71df0590/kurigram-2.2.15-py3-none-any.whl", hash = "sha256:9622af086988d0df783257b34e0ab423f7d33f1412b563e0d4f3df58d57d8f65", size = 5298431 },
+]
+
+[[package]]
+name = "pyaes"
+version = "1.6.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/44/66/2c17bae31c906613795711fc78045c285048168919ace2220daa372c7d72/pyaes-1.6.1.tar.gz", hash = "sha256:02c1b1405c38d3c370b085fb952dd8bea3fadcee6411ad99f312cc129c536d8f", size = 28536 }
+
+[[package]]
+name = "pysocks"
+version = "1.7.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bd/11/293dd436aea955d45fc4e8a35b6ae7270f5b8e00b53cf6c024c83b657a11/PySocks-1.7.1.tar.gz", hash = "sha256:3f8804571ebe159c380ac6de37643bb4685970655d3bba243530d6558b799aa0", size = 284429 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/59/b4572118e098ac8e46e399a1dd0f2d85403ce8bbaad9ec79373ed6badaf9/PySocks-1.7.1-py3-none-any.whl", hash = "sha256:2725bd0a9925919b9b51739eea5f9e2bae91e83288108a9ad338b2e3a4435ee5", size = 16725 },
+]

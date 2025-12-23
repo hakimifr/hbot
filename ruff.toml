@@ -1,0 +1,28 @@
+line-length = 120
+target-version = "py313" # Adjust to your minimum Python version if needed
+
+[lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "B",   # bugbear (great for catching common mistakes)
+    "C4",  # comprehensions
+    "UP",  # pyupgrade (keeps code modern)
+    "I",   # isort (import sorting)
+    "N",   # PEP8 naming
+    "S",   # bandit (basic security issues)
+    "BLE", # catch-all except
+    "A",   # shadowed builtins
+]
+# ignore = [
+#     "E501", # Line too long – handled by formatter instead
+# ]
+fixable = ["ALL"]
+unfixable = []
+
+[format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
