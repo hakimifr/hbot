@@ -3,7 +3,7 @@ name = "hbot"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
     "jsondb-hakimifr>=0.1.0",
     "kurigram>=2.2.15",
