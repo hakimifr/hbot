@@ -21,6 +21,8 @@ def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -> dict
         if file.name.startswith("_"):
             continue
 
+        logger.info("loading: '%s'", file.name)
+
         module_name = f"dynamically_loaded_plugin_{file.stem}"
         spec = importlib.util.spec_from_file_location(module_name, file)
 
