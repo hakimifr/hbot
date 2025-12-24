@@ -8,7 +8,6 @@ class BasePlugin:
 
     def __init__(self, app: Client) -> None:
         self.app: Client = app
-        self.register_handlers()
 
     def register_handlers(self) -> list[Handler]:
         raise NotImplementedError("a plugin must implement this method")

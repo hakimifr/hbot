@@ -40,6 +40,9 @@ def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -> dict
                 if not isinstance(handlers, list):
                     raise ValueError("method register_handlers MUST return list[Handler]!")
 
+                for h in handlers:
+                    app.add_handler(h)
+
                 loaded.update({plugin_instance: handlers})
 
                 logger.info(f"loaded plugin '{attr.name}'. desc: '{attr.description}'")
