@@ -5,6 +5,7 @@ from pyrogram.handlers.handler import Handler
 class BasePlugin:
     name: str = "Unnamed Plugin"
     description: str = "No description"
+    prefixes: list[str] = ["."]
 
     def __init__(self, app: Client) -> None:
         self.app: Client = app
