@@ -23,11 +23,11 @@ requires-dist = [
 
 [[package]]
 name = "jsondb-hakimifr"
-version = "0.1.0"
+version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/96/8f/f06d88975abf046c85699bec88ac805bf48b6a997b651c0bdc2e2d228be9/jsondb_hakimifr-0.1.0.tar.gz", hash = "sha256:92f933359b225b5993e397875a8053b7e0e04433258a54fa39c6a8b7f91fee5b", size = 8830 }
+sdist = { url = "https://files.pythonhosted.org/packages/dd/94/a9a165209d7eaf9da6c01e810b298c81553a3f394e623218c74ec4158ae3/jsondb_hakimifr-0.2.0.tar.gz", hash = "sha256:69992ac09d666d5366fca22efff29f2a352cf70d9257468165433dd67de35340", size = 8915 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/08/06/a07afd740f97260e9944e67c4c46ebc8fc155acf3a5ce59659a435bf31aa/jsondb_hakimifr-0.1.0-py3-none-any.whl", hash = "sha256:5bac1e5f9d7feb699fe219cbf1f9d071eaaf2023b38c9de3760a5028fce9a8c5", size = 8635 },
+    { url = "https://files.pythonhosted.org/packages/7f/df/220a45ec4082fcb2a10058c6827a97f111e4f61c98405915c34bad8bce56/jsondb_hakimifr-0.2.0-py3-none-any.whl", hash = "sha256:428fa905f4a45163fcfaaef06315b727e71d13e9ae5f07ca9cf12ee882a8782f", size = 8724 },
 ]
 
 [[package]]
