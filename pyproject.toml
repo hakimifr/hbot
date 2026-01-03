@@ -5,6 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "google>=3.0.0",
+    "google-genai>=1.56.0",
     "jsondb-hakimifr>=0.1.0",
     "kurigram>=2.2.15",
     "tgcrypto>=1.2.5",
