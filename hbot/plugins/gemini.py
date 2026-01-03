@@ -53,4 +53,4 @@ class Gemini(BasePlugin):
         return response.text
 
     def register_handlers(self) -> list[Handler]:
-        return [MessageHandler(self.ask_gemini, filters.command("ask", prefixes=self.prefixes) & filters.me)]
+        return [MessageHandler(self.search_handler, filters.command("ask", prefixes=self.prefixes) & filters.me)]
