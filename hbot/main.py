@@ -13,6 +13,9 @@ logger = logging.getLogger(__name__)
 api_id = os.getenv("API_ID")
 api_hash = os.getenv("API_HASH")
 
+if api_id is None or api_hash is None:
+    raise OSError("API_ID and API_HASH must be exported!")
+
 
 async def main() -> None:
     app = Client("hbot", api_id, api_hash)
