@@ -1,5 +1,6 @@
 import logging
 import os
+from tempfile import NamedTemporaryFile
 
 from google import genai
 from google.genai import types
@@ -34,7 +35,14 @@ class Gemini(BasePlugin):
             try:
                 # Call the async helper
                 response_text = await self.ask_gemini(prompt)
-                await message.edit(response_text)
+                if len(response_text) > 4096:
+                    await message.edit_text("response too long, sending as file")
+                    with NamedTemporaryFile("w+", encoding="utf-8", suffix=".md") as f:
+                        f.write(response_text)
+                        f.flush()
+                        await message.reply_document(f.name)
+                else:
+                    await message.edit_text(response_text)
             except TimeoutError as e:
                 logging.error(f"Gemini Error: {e}")
                 await message.edit(f"Error: {str(e)}")
