@@ -7,6 +7,7 @@ from pyrogram import filters
 from pyrogram.client import Client
 from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
+from pyrogram.types import Message
 
 from hbot.base_plugin import BasePlugin
 
@@ -20,8 +21,13 @@ class Gemini(BasePlugin):
     def __init__(self, app: Client) -> None:
         self.app: Client = app
 
-    async def search_handler(self, client, message):
-        parts = message.text.split(maxsplit=1)
+    async def search_handler(self, client: Client, message: Message) -> None:
+        if os.getenv(key="GEMINI_API_KEY") is None:
+            await message.edit_text("api key for gemini is not set")
+            logger.error("api key for gemini is not set, please export GEMINI_API_KEY")
+            return
+
+        parts = message.text.split(maxsplit=1)  # type: ignore
         if len(parts) > 1:
             prompt = parts[1]
             await message.edit("Asking..")
