@@ -44,7 +44,7 @@ class MaintenancePlugin(BasePlugin):
         db.data["restart"] = True
         db.data["update_changelog"] = result.stdout.decode()
         db.write_database()
-        os.execl("/usr/local/bin/uv", "uv", "run", "python3", "-m", "hbot")  # noqa: S606
+        os.execl("/usr/bin/uv", "uv", "run", "python3", "-m", "hbot")  # noqa: S606
 
     async def shell(self, app: Client, message: Message) -> None:
         result = subprocess.run(  # noqa: S603
