@@ -24,18 +24,24 @@ class MaintenancePlugin(BasePlugin):
     def __init__(self, app: Client) -> None:
         self.app: Client = app
 
-    async def update(self, app: Client, message: Message) -> str:
+    async def update(self, app: Client, message: Message) -> None:
         begin_time = time.time()
         await message.edit_text("__running git pull__")
         result = subprocess.run(["/bin/git", "pull", "--rebase"], capture_output=True)
         if result.returncode != 0:
-            return f"__error when running git pull__, {result.stderr}"
+            await message.edit_text(f"__error when running git pull__, {str(result.stderr)}")
+            return
+
+        if result.stdout.decode() == "Already up to date.\n":
+            await message.edit_text("__bot is already up to date__")
+            return
 
         await message.edit_text("__restarting the bot__")
         db.data["begin_time"] = begin_time
         db.data["chat_id"] = message.chat.id  # type: ignore
         db.data["message_id"] = message.id
         db.data["restart"] = True
+        db.data["update_changelog"] = result.stdout.decode()
         db.write_database()
         os.execl("/usr/local/bin/uv", "uv", "run", "python3", "-m", "hbot")  # noqa: S606
 
@@ -50,11 +56,16 @@ class MaintenancePlugin(BasePlugin):
             task = loop.create_task(self.app.connect())
 
             def done_callback(*args, **kwargs) -> None:
+                update_text = (
+                    "__bot updated and restarted successfully, took "
+                    f"{end_time - db.data['begin_time']:.2f}s__\n"
+                    f"{db.data['update_changelog']}"
+                )
                 loop.create_task(
                     self.app.edit_message_text(
                         db.data["chat_id"],
                         db.data["message_id"],
-                        f"__bot updated and restarted successfully, took {end_time - db.data['begin_time']:.2f}s__",
+                        update_text,
                     )
                 )
 
