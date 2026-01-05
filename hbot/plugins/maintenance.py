@@ -26,6 +26,15 @@ class MaintenancePlugin(BasePlugin):
     def __init__(self, app: Client) -> None:
         self.app: Client = app
 
+    def _perform_restart(self) -> None:
+        db.data["restart"] = True
+        db.write_database()
+        os.execl("/usr/bin/uv", "uv", "run", "python3", "-m", "hbot")  # noqa: S606
+
+    async def restart(self, app: Client, message: Message) -> None:
+        await message.edit_text("__restarting bot__")
+        self._perform_restart()
+
     async def update(self, app: Client, message: Message) -> None:
         begin_time = time.time()
         await message.edit_text("__running git pull__")
@@ -42,10 +51,8 @@ class MaintenancePlugin(BasePlugin):
         db.data["begin_time"] = begin_time
         db.data["chat_id"] = message.chat.id  # type: ignore
         db.data["message_id"] = message.id
-        db.data["restart"] = True
         db.data["update_changelog"] = result.stdout.decode()
-        db.write_database()
-        os.execl("/usr/bin/uv", "uv", "run", "python3", "-m", "hbot")  # noqa: S606
+        self._perform_restart()
 
     async def shell(self, app: Client, message: Message) -> None:
         partial_func = partial(
@@ -113,6 +120,10 @@ class MaintenancePlugin(BasePlugin):
             MessageHandler(
                 self.update,
                 filters.command("update", prefixes=self.prefixes) & filters.me,
+            ),
+            MessageHandler(
+                self.restart,
+                filters.command("restart", prefixes=self.prefixes) & filters.me,
             ),
             MessageHandler(
                 self.shell,
