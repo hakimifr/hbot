@@ -4,8 +4,8 @@ import os
 import subprocess
 import time
 from functools import partial
-from typing import cast
 
+from anyio import Path
 from jsondb.database import JsonDB
 from pyrogram import filters
 from pyrogram.client import Client
@@ -60,6 +60,27 @@ class MaintenancePlugin(BasePlugin):
 
         await message.edit_text(f"stdout:\n{result.stdout.decode()}\n\nstderr:\n{result.stderr.decode()}\n")
 
+    async def getlog(self, app: Client, message: Message) -> None:
+        await message.edit_text("__uploading log__")
+
+        logger.info("opening log file")
+        log_file: Path = Path("bot.log")
+
+        logger.info("checking log file existence")
+        if not await log_file.exists():
+            logger.warning("log file does not exist")
+            await message.edit_text("__cannot locate log file!__")
+            return
+
+        logger.info("log file exists")
+
+        async with await log_file.open("r", encoding="utf-8") as f:
+            logger.info("open succeeds, uploading")
+            await message.reply_document(f.wrapped.name)
+
+        logger.info("finished")
+        await message.edit_text("__done__")
+
     def register_handlers(self) -> list[Handler]:
         end_time = time.time()
         db.read_database()
@@ -96,5 +117,9 @@ class MaintenancePlugin(BasePlugin):
             MessageHandler(
                 self.shell,
                 filters.command("shell", prefixes=self.prefixes) & filters.me,
+            ),
+            MessageHandler(
+                self.getlog,
+                filters.command("getlog", prefixes=self.prefixes) & filters.me,
             ),
         ]
