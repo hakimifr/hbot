@@ -3,6 +3,7 @@ import logging
 import os
 import subprocess
 import time
+from typing import cast
 
 from jsondb.database import JsonDB
 from pyrogram import filters
@@ -29,7 +30,7 @@ class MaintenancePlugin(BasePlugin):
         await message.edit_text("__running git pull__")
         result = subprocess.run(["/bin/git", "pull", "--rebase"], capture_output=True)
         if result.returncode != 0:
-            await message.edit_text(f"__error when running git pull__, {str(result.stderr)}")
+            await message.edit_text(f"__error when running git pull__, {str(result.stderr.decode())}")
             return
 
         if result.stdout.decode() == "Already up to date.\n":
@@ -44,6 +45,14 @@ class MaintenancePlugin(BasePlugin):
         db.data["update_changelog"] = result.stdout.decode()
         db.write_database()
         os.execl("/usr/local/bin/uv", "uv", "run", "python3", "-m", "hbot")  # noqa: S606
+
+    async def shell(self, app: Client, message: Message) -> None:
+        result = subprocess.run(  # noqa: S603
+            message.text.removeprefix(".shell").strip(),  # type: ignore
+            capture_output=True,
+        )
+
+        await message.edit_text(f"stdout:\n{result.stdout.decode()}\n\nstderr:\n{result.stderr.decode()}\n")
 
     def register_handlers(self) -> list[Handler]:
         end_time = time.time()
@@ -73,4 +82,13 @@ class MaintenancePlugin(BasePlugin):
 
             db.data["restart"] = False
 
-        return [MessageHandler(self.update, filters.command("update", prefixes=self.prefixes) & filters.me)]
+        return [
+            MessageHandler(
+                self.update,
+                filters.command("update", prefixes=self.prefixes) & filters.me,
+            ),
+            MessageHandler(
+                self.shell,
+                filters.command("shell", prefixes=self.prefixes) & filters.me,
+            ),
+        ]
