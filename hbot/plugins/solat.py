@@ -91,9 +91,9 @@ class SolatPlugin(BasePlugin):
     async def waktu_solat(self, app: Client, message: Message) -> None:
         if len(self.zones_data) == 0:
             logger.info("zones are not yet cached. building cache...")
-            self.zones_data = db.data["zones"] = (
-                await self.http_client.get("https://api.waktusolat.app/zones", timeout=10)
-            ).json()
+            response_json = (await self.http_client.get("https://api.waktusolat.app/zones", timeout=10)).json()
+            db.data["zones"] = response_json
+            self.zones_data = [ZoneData(**z) for z in response_json]
             self.valid_jakimcode = self._get_valid_jakimcode()
             db.write_database()
 
