@@ -3,6 +3,7 @@ import logging
 import os
 import subprocess
 import time
+from functools import partial
 from typing import cast
 
 from jsondb.database import JsonDB
@@ -47,9 +48,14 @@ class MaintenancePlugin(BasePlugin):
         os.execl("/usr/bin/uv", "uv", "run", "python3", "-m", "hbot")  # noqa: S606
 
     async def shell(self, app: Client, message: Message) -> None:
-        result = subprocess.run(  # noqa: S603
-            ["/bin/sh", "-c", message.text.removeprefix('.shell').strip()],  # type: ignore
+        partial_func = partial(
+            subprocess.run,
+            ["/bin/sh", "-c", message.text.removeprefix(".shell").strip()],  # type: ignore
             capture_output=True,
+        )
+        result: subprocess.CompletedProcess = await asyncio.get_running_loop().run_in_executor(
+            None,
+            partial_func,
         )
 
         await message.edit_text(f"stdout:\n{result.stdout.decode()}\n\nstderr:\n{result.stderr.decode()}\n")
