@@ -48,7 +48,7 @@ class MaintenancePlugin(BasePlugin):
 
     async def shell(self, app: Client, message: Message) -> None:
         result = subprocess.run(  # noqa: S603
-            message.text.removeprefix(".shell").strip(),  # type: ignore
+            ["/bin/sh", "-c", message.text.removeprefix('.shell').strip()],  # type: ignore
             capture_output=True,
         )
 
