@@ -14,57 +14,131 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import annotations
+
+import json
 import logging
+import logging.config
 import os
-
-GLOBAL_DEBUG: bool = False
-if os.getenv("TGBOT_DEBUG") is not None:
-    GLOBAL_DEBUG = True
-
-log_additional_args: dict = {"filename": "bot.log", "level": logging.INFO}
-if GLOBAL_DEBUG:
-    log_additional_args.clear()
-    log_additional_args.update({"level": logging.DEBUG})
+from datetime import UTC, datetime
+from logging.handlers import RotatingFileHandler
+from typing import Any
 
 
-#
-# Adapted from https://stackoverflow.com/a/56944256
-#
-class ColouredFormatter(logging.Formatter):
-    grey = "\x1b[38;20m"
-    yellow = "\x1b[33;20m"
-    red = "\x1b[31;20m"
-    green = "\x1b[0;32m"
-    blue = "\x1b[0;34m"
-    bold_red = "\x1b[31;1m"
-    reset = "\x1b[0m"
-    format_str = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "y", "on"}
 
-    FORMATS = {
-        logging.DEBUG: blue + format_str + reset,
-        logging.INFO: green + format_str + reset,
-        logging.WARNING: yellow + format_str + reset,
-        logging.ERROR: red + format_str + reset,
-        logging.CRITICAL: bold_red + format_str + reset,
+
+def _env_int(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
+class _DropHttpxNoise(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return not (record.name.startswith("httpx") and record.levelno <= logging.INFO)
+
+
+class _ColorFormatter(logging.Formatter):
+    _reset = "\x1b[0m"
+    _colors = {
+        logging.DEBUG: "\x1b[0;34m",
+        logging.INFO: "\x1b[0;32m",
+        logging.WARNING: "\x1b[33;20m",
+        logging.ERROR: "\x1b[31;20m",
+        logging.CRITICAL: "\x1b[31;1m",
     }
 
-    def format(self, record: logging.LogRecord):
-        if record.name.startswith("httpx") and record.levelno <= logging.INFO:
-            return ""
-
-        log_fmt = self.FORMATS.get(record.levelno)
-        formatter = logging.Formatter(log_fmt)
-        return formatter.format(record)
-
-
-logging.basicConfig(format="%(asctime)s [%(levelname)s] %(name)s: %(message)s", **log_additional_args)
+    def format(self, record: logging.LogRecord) -> str:
+        base = super().format(record)
+        color = self._colors.get(record.levelno)
+        if not color:
+            return base
+        return f"{color}{base}{self._reset}"
 
 
-for handler in logging.root.handlers:
-    if issubclass(logging.StreamHandler, type(handler)):
-        logging.root.removeHandler(handler)
+class _JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        payload: dict[str, Any] = {
+            "ts": datetime.fromtimestamp(record.created, tz=UTC).isoformat().replace("+00:00", "Z"),
+            "level": record.levelname,
+            "logger": record.name,
+            "msg": record.getMessage(),
+        }
 
-_sh = logging.StreamHandler()
-_sh.setFormatter(ColouredFormatter())
-logging.root.addHandler(_sh)
-logging.getLogger(__name__).info("Coloured log output initialized")
+        if record.exc_info:
+            payload["exc"] = self.formatException(record.exc_info)
+
+        return json.dumps(payload, ensure_ascii=False)
+
+
+def configure_logging() -> None:
+    # Backwards-compat: existing env var
+    debug = _env_bool("TGBOT_DEBUG")
+
+    level = os.getenv("HBOT_LOG_LEVEL", "DEBUG" if debug else "INFO").upper()
+    log_file = os.getenv("HBOT_LOG_FILE")
+
+    max_bytes = _env_int("HBOT_LOG_MAX_BYTES", 5 * 1024 * 1024)
+    backups = _env_int("HBOT_LOG_BACKUPS", 3)
+
+    use_color = _env_bool("HBOT_LOG_COLOR", default=True) and os.getenv("NO_COLOR") is None
+
+    root_handlers: list[str] = ["console"]
+    handlers: dict[str, Any] = {
+        "console": {
+            "class": "logging.StreamHandler",
+            "level": level,
+            "formatter": "color" if use_color else "plain",
+            "filters": ["drop_httpx"],
+        }
+    }
+
+    if log_file:
+        handlers["file"] = {
+            "()": RotatingFileHandler,
+            "filename": log_file,
+            "maxBytes": max_bytes,
+            "backupCount": backups,
+            "encoding": "utf-8",
+            "level": level,
+            "formatter": "json",
+            "filters": ["drop_httpx"],
+        }
+        root_handlers.append("file")
+
+    logging.config.dictConfig(
+        {
+            "version": 1,
+            "disable_existing_loggers": False,
+            "filters": {"drop_httpx": {"()": _DropHttpxNoise}},
+            "formatters": {
+                "plain": {"format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"},
+                "color": {
+                    "()": _ColorFormatter,
+                    "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+                },
+                "json": {"()": _JsonFormatter},
+            },
+            "handlers": handlers,
+            "root": {"level": level, "handlers": root_handlers},
+            "loggers": {
+                # Reduce ultra-noisy libs without hiding warnings/errors.
+                "pyrogram": {"level": "INFO" if not debug else "DEBUG"},
+                "asyncio": {"level": "WARNING"},
+            },
+        }
+    )
+
+    logging.getLogger(__name__).info("Logging initialized (level=%s, file=%s)", level, log_file or "disabled")
+
+
+configure_logging()
