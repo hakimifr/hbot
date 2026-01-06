@@ -3,7 +3,6 @@ import logging
 import os
 import subprocess
 import time
-from typing import cast
 
 from jsondb.database import JsonDB
 from pyrogram import filters
@@ -28,7 +27,7 @@ class MaintenancePlugin(BasePlugin):
     async def update(self, app: Client, message: Message) -> None:
         begin_time = time.time()
         await message.edit_text("__running git pull__")
-        result = subprocess.run(["/bin/git", "pull", "--rebase"], capture_output=True)
+        result = subprocess.run(["/bin/git", "pull", "--rebase"], capture_output=True)  # noqa: S603
         if result.returncode != 0:
             await message.edit_text(f"__error when running git pull__, {str(result.stderr.decode())}")
             return
@@ -48,7 +47,7 @@ class MaintenancePlugin(BasePlugin):
 
     async def shell(self, app: Client, message: Message) -> None:
         result = subprocess.run(  # noqa: S603
-            ["/bin/sh", "-c", message.text.removeprefix('.shell').strip()],  # type: ignore
+            ["/bin/sh", "-c", message.text.removeprefix(".shell").strip()],  # type: ignore
             capture_output=True,
         )
 
