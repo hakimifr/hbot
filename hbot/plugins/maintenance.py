@@ -26,17 +26,20 @@ class MaintenancePlugin(BasePlugin):
     def __init__(self, app: Client) -> None:
         self.app: Client = app
 
-    def _perform_restart(self) -> None:
+    def _perform_restart(self, message: Message) -> None:
+        begin_time = time.time()
+        db.data["begin_time"] = begin_time
+        db.data["chat_id"] = message.chat.id  # type: ignore
+        db.data["message_id"] = message.id
         db.data["restart"] = True
         db.write_database()
         os.execl("/usr/bin/uv", "uv", "run", "python3", "-m", "hbot")  # noqa: S606
 
     async def restart(self, app: Client, message: Message) -> None:
         await message.edit_text("__restarting bot__")
-        self._perform_restart()
+        self._perform_restart(message)
 
     async def update(self, app: Client, message: Message) -> None:
-        begin_time = time.time()
         await message.edit_text("__running git pull__")
         result = subprocess.run(["/bin/git", "pull", "--rebase"], capture_output=True)
         if result.returncode != 0:
@@ -48,11 +51,8 @@ class MaintenancePlugin(BasePlugin):
             return
 
         await message.edit_text("__restarting the bot__")
-        db.data["begin_time"] = begin_time
-        db.data["chat_id"] = message.chat.id  # type: ignore
-        db.data["message_id"] = message.id
         db.data["update_changelog"] = result.stdout.decode()
-        self._perform_restart()
+        self._perform_restart(message)
 
     async def shell(self, app: Client, message: Message) -> None:
         partial_func = partial(
