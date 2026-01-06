@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import shutil
 import subprocess
 import time
 from functools import partial
@@ -34,7 +35,9 @@ class MaintenancePlugin(BasePlugin):
         db.data["message_id"] = message.id
         db.data["restart"] = True
         db.write_database()
-        os.execl("/usr/bin/uv", "uv", "run", "python3", "-m", "hbot")  # noqa: S606
+
+        uv_path: str = shutil.which("uv") or "/usr/bin/uv"  # fallback to hardcoded path
+        os.execl(uv_path, "uv", "run", "python3", "-m", "hbot")  # noqa: S606
 
     async def restart(self, app: Client, message: Message) -> None:
         if update_lock.locked():
@@ -54,9 +57,15 @@ class MaintenancePlugin(BasePlugin):
 
         async with update_lock:
             await message.edit_text("__running git pull__")
+
+            git_path: str = shutil.which("git") or "/usr/bin/git"  # fallback to hardcoded path
+
+            # unfortunately, asyncio.create_subprocess_exec cannot be used here because this bot
+            # uses uvloop, and the aforementioned function is broken with uvloop. we have to resort
+            # to this workaround, which work just as well
             partial_func = partial(
                 subprocess.run,
-                ["/bin/git", "pull", "--rebase"],
+                [git_path, "pull", "--rebase"],
                 capture_output=True,
             )
             result: subprocess.CompletedProcess = await asyncio.get_running_loop().run_in_executor(
@@ -76,9 +85,11 @@ class MaintenancePlugin(BasePlugin):
             self._perform_restart(message)
 
     async def shell(self, app: Client, message: Message) -> None:
+        sh_path: str = shutil.which("sh") or "/usr/bin/sh"  # fallback to hardcoded path
+
         partial_func = partial(
             subprocess.run,
-            ["/bin/sh", "-c", message.text.removeprefix(".shell").strip()],  # type: ignore
+            [sh_path, "-c", message.text.removeprefix(".shell").strip()],  # type: ignore
             capture_output=True,
         )
         result: subprocess.CompletedProcess = await asyncio.get_running_loop().run_in_executor(
