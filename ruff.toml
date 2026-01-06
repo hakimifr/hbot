@@ -15,9 +15,11 @@ select = [
     "BLE", # catch-all except
     "A",   # shadowed builtins
 ]
-# ignore = [
-#     "E501", # Line too long – handled by formatter instead
-# ]
+ignore = [
+    # Usage of assert - we are never running Python with O and we are only
+    # using assert to satisfy linter
+    "S101",
+]
 fixable = ["ALL"]
 unfixable = []
 
