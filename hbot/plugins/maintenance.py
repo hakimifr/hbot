@@ -17,6 +17,7 @@ from hbot.base_plugin import BasePlugin
 
 logger = logging.getLogger(__name__)
 db = JsonDB(__name__)
+update_lock: asyncio.Lock = asyncio.Lock()
 
 
 class MaintenancePlugin(BasePlugin):
@@ -36,23 +37,43 @@ class MaintenancePlugin(BasePlugin):
         os.execl("/usr/bin/uv", "uv", "run", "python3", "-m", "hbot")  # noqa: S606
 
     async def restart(self, app: Client, message: Message) -> None:
-        await message.edit_text("__restarting bot__")
-        self._perform_restart(message)
+        if update_lock.locked():
+            logger.warning("[restart] cannot acquire lock, will not restart")
+            await message.edit_text("__cannot restart because an update process is running__")
+            return
+
+        async with update_lock:
+            await message.edit_text("__restarting bot__")
+            self._perform_restart(message)
 
     async def update(self, app: Client, message: Message) -> None:
-        await message.edit_text("__running git pull__")
-        result = subprocess.run(["/bin/git", "pull", "--rebase"], capture_output=True)
-        if result.returncode != 0:
-            await message.edit_text(f"__error when running git pull__, {str(result.stderr.decode())}")
+        if update_lock.locked():
+            logger.warning("[update] cannot acquire lock, will not update")
+            await message.edit_text("__another update is already running__")
             return
 
-        if result.stdout.decode() == "Already up to date.\n":
-            await message.edit_text("__bot is already up to date__")
-            return
+        async with update_lock:
+            await message.edit_text("__running git pull__")
+            partial_func = partial(
+                subprocess.run,
+                ["/bin/git", "pull", "--rebase"],
+                capture_output=True,
+            )
+            result: subprocess.CompletedProcess = await asyncio.get_running_loop().run_in_executor(
+                None,
+                partial_func,
+            )
+            if result.returncode != 0:
+                await message.edit_text(f"__error when running git pull__, {str(result.stderr.decode())}")
+                return
 
-        await message.edit_text("__restarting the bot__")
-        db.data["update_changelog"] = result.stdout.decode()
-        self._perform_restart(message)
+            if result.stdout.decode() == "Already up to date.\n":
+                await message.edit_text("__bot is already up to date__")
+                return
+
+            await message.edit_text("__restarting the bot__")
+            db.data["update_changelog"] = result.stdout.decode()
+            self._perform_restart(message)
 
     async def shell(self, app: Client, message: Message) -> None:
         partial_func = partial(
