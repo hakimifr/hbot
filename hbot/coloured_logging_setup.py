@@ -85,7 +85,16 @@ def configure_logging() -> None:
     debug = _env_bool("TGBOT_DEBUG")
 
     level = os.getenv("HBOT_LOG_LEVEL", "DEBUG" if debug else "INFO").upper()
-    log_file = os.getenv("HBOT_LOG_FILE")
+
+    raw_log_file = os.getenv("HBOT_LOG_FILE")
+    if raw_log_file is None:
+        log_file: str | None = "bot.log"
+    else:
+        raw_log_file = raw_log_file.strip()
+        if raw_log_file.lower() in {"", "0", "false", "off", "none"}:
+            log_file = None
+        else:
+            log_file = raw_log_file
 
     max_bytes = _env_int("HBOT_LOG_MAX_BYTES", 5 * 1024 * 1024)
     backups = _env_int("HBOT_LOG_BACKUPS", 3)
