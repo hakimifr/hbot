@@ -23,4 +23,9 @@ class PingPlugin(BasePlugin):
         await message.edit_text("Pong!")
 
     def register_handlers(self) -> list[Handler]:
-        return [MessageHandler(self.ping, filters.command("ping", prefixes=self.prefixes))]
+        return [
+            MessageHandler(
+                self.ping,
+                filters.command("ping", prefixes=self.prefixes) & filters.me,
+            ),
+        ]
