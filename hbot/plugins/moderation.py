@@ -24,7 +24,6 @@ class ModPlugin(BasePlugin):
             await message.edit_text("__reply to a message!__")
             return
 
-        # delete 100-by-100
         for i in range(message.reply_to_message.id, message.id, 100):
             await app.delete_messages(
                 chat_id=message.chat.id,  # type: ignore
@@ -35,7 +34,30 @@ class ModPlugin(BasePlugin):
         await asyncio.sleep(5)
         await message.delete()
 
+    async def ban(self, app: Client, message: Message) -> None:
+        if not message.reply_to_message or not message.reply_to_message.from_user:
+            await message.edit_text("__reply to a user message!__")
+            return
+
+        await app.ban_chat_member(message.chat.id, message.reply_to_message.from_user.id)  # type: ignore
+        await message.edit_text("__banned__")
+        await asyncio.sleep(5)
+        await message.delete()
+
+    async def unban(self, app: Client, message: Message) -> None:
+        if not message.reply_to_message or not message.reply_to_message.from_user:
+            await message.edit_text("__reply to a user message!__")
+            return
+
+        await app.unban_chat_member(message.chat.id, message.reply_to_message.from_user.id)  # type: ignore
+        await message.edit_text("__unbanned__")
+        await asyncio.sleep(5)
+        await message.delete()
+
     def register_handlers(self) -> list[Handler]:
+        base = filters.me
         return [
-            MessageHandler(self.purge, filters.command("purge", prefixes=self.prefixes) & filters.me),
+            MessageHandler(self.purge, filters.command("purge", prefixes=self.prefixes) & base),
+            MessageHandler(self.ban, filters.command("ban", prefixes=self.prefixes) & base),
+            MessageHandler(self.unban, filters.command("unban", prefixes=self.prefixes) & base),
         ]
