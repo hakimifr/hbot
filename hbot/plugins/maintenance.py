@@ -115,15 +115,19 @@ class MaintenancePlugin(BasePlugin):
 
         loop = asyncio.get_running_loop()
 
-        if db.data.get("restart"):
+        restart_status: bool = db.data.get("restart", False)
+        update_changelog: str = db.data.get("update_changelog", "")
+        restart_time_delta: float = end_time - db.data["begin_time"]
+
+        if restart_status:
             logger.info("attempting to finish restart")
             task = loop.create_task(self.app.connect())
 
             def done_callback(*args, **kwargs) -> None:
                 update_text = (
-                    "__bot updated and restarted successfully, took "
-                    f"{end_time - db.data['begin_time']:.2f}s__\n"
-                    f"{db.data['update_changelog']}"
+                    f"__bot{' updated and ' if update_changelog else ' '}restarted successfully, took "
+                    f"{restart_time_delta:.2f}s__\n"
+                    f"{update_changelog}"
                 )
                 loop.create_task(
                     self.app.edit_message_text(
@@ -135,6 +139,7 @@ class MaintenancePlugin(BasePlugin):
 
             task.add_done_callback(done_callback)
 
+            db.data["update_changelog"] = ""
             db.data["restart"] = False
 
         return [
