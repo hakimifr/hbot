@@ -27,7 +27,7 @@ def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -> dict
         spec = importlib.util.spec_from_file_location(module_name, file)
 
         if spec is None or spec.loader is None:
-            logger.error(f"could not load plugin '{file.name}'")
+            logger.error("could not load plugin '%s'", file.name)
             continue
 
         module = importlib.util.module_from_spec(spec)  # type: ignore
@@ -47,6 +47,6 @@ def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -> dict
 
                 loaded.update({plugin_instance: handlers})
 
-                logger.info(f"loaded plugin '{attr.name}'. desc: '{attr.description}'")
+                logger.info("loaded plugin '%s'. desc: '%s'", attr.name, attr.description)
 
     return loaded

@@ -44,7 +44,7 @@ class Gemini(BasePlugin):
                 else:
                     await message.edit_text(response_text)
             except TimeoutError as e:
-                logging.error(f"Gemini Error: {e}")
+                logging.exception("Gemini Error:")
                 await message.edit(f"Error: {str(e)}")
         else:
             await message.edit("Please provide a search query!")
@@ -61,7 +61,7 @@ class Gemini(BasePlugin):
             if response.text is None:
                 raise
         except Exception:
-            logger.error("error when generating response, traceback:", exc_info=True)
+            logger.exception("error when generating response, traceback:")
             return "error when generating response, see log for more info"
 
         return response.text

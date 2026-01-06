@@ -30,7 +30,7 @@ class BasePlugin:
     # Allow other plugins to change the prefix
     # TODO: add option to reload all modules and/or restart the bot
     def change_global_prefix(self, prefixes: list[str]) -> None:
-        logger.info(f"changing global prefixes for bot to {prefixes}")
+        logger.info("changing global prefixes for bot to %s", prefixes)
         config = JsonDB(__name__)
 
         config.read_database()
