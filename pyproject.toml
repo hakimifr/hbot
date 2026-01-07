@@ -14,3 +14,9 @@ dependencies = [
     "tgcrypto>=1.2.5",
     "uvloop>=0.22.1",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.10",
+    "ty>=0.0.9",
+]
