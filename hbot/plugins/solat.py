@@ -15,10 +15,11 @@ from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
+from hbot import PERSIST_DIR
 from hbot.base_plugin import BasePlugin
 
 logger = logging.getLogger(__name__)
-db: JsonDB = JsonDB(__name__)
+db: JsonDB = JsonDB(__name__, PERSIST_DIR)
 
 
 @dataclass(slots=True)

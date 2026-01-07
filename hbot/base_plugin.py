@@ -4,6 +4,8 @@ from jsondb.database import JsonDB
 from pyrogram.client import Client
 from pyrogram.handlers.handler import Handler
 
+from hbot import PERSIST_DIR
+
 logger = logging.getLogger(__name__)
 
 
@@ -13,7 +15,7 @@ class BasePlugin:
 
     # There is no need to change the prefixes in the subclasses. This way, consistency is maintained for every plugins.
     # Unless there's a valid reason of doing so.
-    config = JsonDB(__name__)
+    config = JsonDB(__name__, PERSIST_DIR)
 
     config.read_database()
     if isinstance(config.data.get("prefixes"), list):
@@ -31,7 +33,7 @@ class BasePlugin:
     # TODO: add option to reload all modules and/or restart the bot
     def change_global_prefix(self, prefixes: list[str]) -> None:
         logger.info("changing global prefixes for bot to %s", prefixes)
-        config = JsonDB(__name__)
+        config = JsonDB(__name__, PERSIST_DIR)
 
         config.read_database()
         config.data.update({"prefixes": prefixes})

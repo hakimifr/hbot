@@ -6,7 +6,7 @@ from pyrogram.client import Client
 from pyrogram.handlers.handler import Handler
 from pyrogram.sync import idle
 
-from hbot import PLUGINS_DIR
+from hbot import PERSIST_DIR, PLUGINS_DIR
 from hbot.base_plugin import BasePlugin
 from hbot.plugins_loader import load_plugins
 
@@ -16,7 +16,12 @@ api_id = os.getenv("API_ID")
 api_hash = os.getenv("API_HASH")
 
 if api_id is None or api_hash is None:
-    raise OSError("API_ID and API_HASH must be exported!")
+    logger.critical("API_ID and API_HASH must be exported!")
+    sys.exit(1)
+
+if not (PERSIST_DIR.exists() and PERSIST_DIR.is_dir()):
+    logger.critical("PERSIST_DIR '%s' does not exist!", PERSIST_DIR.as_posix())
+    sys.exit(1)
 
 
 async def get_loaded_plugins() -> dict[BasePlugin, list[Handler]]:
