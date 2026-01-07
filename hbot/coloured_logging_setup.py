@@ -128,7 +128,7 @@ def configure_logging() -> None:
         {
             "version": 1,
             "disable_existing_loggers": False,
-            "filters": {"drop_httpx": {"()": _DropHttpxNoise}},
+            "filters": {"drop_httpx": {"()": _DropHttpxNoise}},  # ty: ignore[missing-typed-dict-key,invalid-key]
             "formatters": {
                 "plain": {"format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"},
                 "color": {
