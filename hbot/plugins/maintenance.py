@@ -129,7 +129,7 @@ class MaintenancePlugin(BasePlugin):
 
         restart_status: bool = db.data.get("restart", False)
         update_changelog: str = db.data.get("update_changelog", "")
-        restart_time_delta: float = end_time - db.data["begin_time"]
+        restart_time_delta: float = end_time - db.data.get("begin_time", 0)
 
         if restart_status:
             logger.info("attempting to finish restart")
