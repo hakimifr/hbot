@@ -1,8 +1,9 @@
 import asyncio
+import atexit
 import logging
 import os
 import shutil
-import subprocess
+import subprocess  # noqa S404
 import time
 from functools import partial
 
@@ -36,6 +37,9 @@ class MaintenancePlugin(BasePlugin):
         db.data["message_id"] = message.id
         db.data["restart"] = True
         db.write_database()
+
+        # cleanup
+        atexit._run_exitfuncs()
 
         uv_path: str = shutil.which("uv") or "/usr/bin/uv"  # fallback to hardcoded path
         os.execl(uv_path, "uv", "run", "python3", "-m", "hbot")  # noqa: S606

@@ -38,6 +38,8 @@ async def main() -> None:
     try:
         await app.start()
         await idle()
+    except ConnectionError:  # app.start() already called by other plugins (rm6785)
+        await idle()
     finally:
         await app.stop()
         sys.exit(0)
