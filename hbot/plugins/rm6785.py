@@ -782,6 +782,14 @@ class RM6785Plugin(BasePlugin):
         else:
             await confirmation_message.edit_text(f"__error: PostUtil: {status.error_string}__")
 
+    async def lsauth(self, app: Client, message: Message) -> None:
+        auth_users: dict[UserIdAuthDbKey, Name] = AuthUtils.get_authorised_users()
+
+        msg = "\n".join(f"[{name}](tg://user?id={user_id})" for user_id, name in auth_users.items())
+
+        # we cannot use self._respond here because editing existing message does not mention/tag
+        await message.reply_text(msg)
+
     def register_handlers(self) -> list[Handler]:
         asyncio.get_running_loop().create_task(PostUtils._on_start(self.app))
         return [
@@ -812,5 +820,9 @@ class RM6785Plugin(BasePlugin):
             MessageHandler(
                 self.cancel,
                 filters.command("cancel", prefixes=self.prefixes),
+            ),
+            MessageHandler(
+                self.lsauth,
+                filters.command("lsauth", prefixes=self.prefixes),
             ),
         ]
