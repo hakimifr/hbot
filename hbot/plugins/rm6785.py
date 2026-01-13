@@ -18,21 +18,26 @@ from pyrogram.types.messages_and_media import Message
 from hbot import PERSIST_DIR
 from hbot.base_plugin import BasePlugin
 
-type Name = str
-type UserId = int
-type ChatId = int
-type MessageId = int
-type ChannelId = int
-type PostSourceChatId = int
-type PostSourceMessageId = int
-type PostConfirmationMessageId = int
-type StickerChatId = int
-type StickerMessageId = int
-type StickerId = str
+# ruff: disable[E221]
+# fmt: off
+type Name                       = str
+type UserId                     = int
+type ChatId                     = int
+type UserIdAuthDbKey            = str
+type MessageId                  = int
+type ChannelId                  = int
+type PostSourceChatId           = int
+type PostSourceMessageId        = int
+type PostConfirmationMessageId  = int
+type StickerChatId              = int
+type StickerMessageId           = int
+type StickerId                  = str
+# fmt: on
+# ruff: enable[E221]
 
 RM6785_CHANNEL_ID: ChannelId = -1001384382397
 RM6785_STICKER_ID: StickerId = "CAACAgUAAx0EX9CqtwACBvdpYhcQ4xFR18TbqiDxMasDZ4EWOQACLwQAAt4AAXFVonEmaEmbIrYeBA"
-SUPERUSERS: dict[str[UserId], Name] = {
+SUPERUSERS: dict[UserIdAuthDbKey, Name] = {
     "1024853832": "hakimi",
     "1138003186": "samar",
 }
@@ -56,14 +61,14 @@ class LintStatus:
 
 class AuthUtils:
     db_auth: JsonDB = JsonDB(f"{__name__}:auth", PERSIST_DIR)
-    authorised_users: dict[str[UserId], Name] = db_auth.data
+    authorised_users: dict[UserIdAuthDbKey, Name] = db_auth.data
     if len(authorised_users) == 0:
         authorised_users.update(SUPERUSERS)
         db_auth.data = authorised_users
         db_auth.write_database()
 
     @classmethod
-    def authorise_user(cls, name: Name, user_id: str[UserId]) -> AuthStatus:
+    def authorise_user(cls, name: Name, user_id: UserId) -> AuthStatus:
         if str(user_id) in cls.authorised_users:
             logger.warning(
                 "user [name: '%s', id: '%s'] is already in authorised users list",
@@ -83,18 +88,18 @@ class AuthUtils:
         return AuthStatus(True, "")
 
     @classmethod
-    def deauthorise_user(cls, user_id: str[UserId]) -> AuthStatus:
+    def deauthorise_user(cls, user_id: UserId) -> AuthStatus:
         if str(user_id) not in cls.authorised_users:
             logger.warning(
                 "user [name: '%s', id: '%s'] not in authorised users list",
-                cls.authorised_users[user_id],
+                cls.authorised_users[str(user_id)],
                 user_id,
             )
             return AuthStatus(False, "user is not in authorised users list")
 
         logger.info(
             "removing user [name: '%s', id: '%s'] from authorised users list",
-            cls.authorised_users[user_id],
+            cls.authorised_users[str(user_id)],
             user_id,
         )
         cls.authorised_users.pop(str(user_id))
@@ -107,10 +112,13 @@ class AuthUtils:
         return str(user_id) in SUPERUSERS
 
     @classmethod
-    def get_authorised_users(cls) -> dict[str[UserId], Name]:
+    def get_authorised_users(cls) -> dict[UserIdAuthDbKey, Name]:
         return cls.authorised_users
 
 
+# this class block is directly adapted from JS version of the bot.
+# hence, the case convention is intentionally left like this.
+# stop ruff linting from caring about this.
 # ruff: disable[N806]
 class LintUtils:
     kernel: bool
@@ -629,7 +637,7 @@ class RM6785Plugin(BasePlugin):
             return
 
         replied_to_user: User = cast(User, message.reply_to_message.from_user)
-        status: AuthStatus = AuthUtils.authorise_user(replied_to_user.full_name, str(replied_to_user.id))
+        status: AuthStatus = AuthUtils.authorise_user(replied_to_user.full_name, replied_to_user.id)
         if not status.ok:
             await self._respond(
                 app,
@@ -654,7 +662,7 @@ class RM6785Plugin(BasePlugin):
             return
 
         replied_to_user: User = cast(User, message.reply_to_message.from_user)
-        status: AuthStatus = AuthUtils.deauthorise_user(str(replied_to_user.id))
+        status: AuthStatus = AuthUtils.deauthorise_user(replied_to_user.id)
         if not status.ok:
             await self._respond(
                 app,
