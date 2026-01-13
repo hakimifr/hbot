@@ -6,6 +6,7 @@ import shutil
 import subprocess  # noqa S404
 import time
 from functools import partial
+from typing import cast
 
 from anyio import Path
 from jsondb.database import JsonDB
@@ -91,10 +92,11 @@ class MaintenancePlugin(BasePlugin):
 
     async def shell(self, app: Client, message: Message) -> None:
         sh_path: str = shutil.which("sh") or "/usr/bin/sh"  # fallback to hardcoded path
+        command: str = cast(str, message.text).removeprefix(".shell").strip()
 
         partial_func = partial(
             subprocess.run,
-            [sh_path, "-c", message.text.removeprefix(".shell").strip()],  # type: ignore
+            [sh_path, "-c", command],  # type: ignore
             capture_output=True,
         )
         result: subprocess.CompletedProcess = await asyncio.get_running_loop().run_in_executor(
@@ -102,7 +104,10 @@ class MaintenancePlugin(BasePlugin):
             partial_func,
         )
 
-        await message.edit_text(f"stdout:\n{result.stdout.decode()}\n\nstderr:\n{result.stderr.decode()}\n")
+        stdout: str = result.stdout.decode()
+        stderr: str = result.stderr.decode()
+
+        await message.edit_text(f"command: `{command}`\nstdout:```\n{stdout}```\n\nstderr:```\n{stderr}\n```")
 
     async def getlog(self, app: Client, message: Message) -> None:
         await message.edit_text("__uploading log__")
