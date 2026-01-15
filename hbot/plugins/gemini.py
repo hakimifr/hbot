@@ -1,6 +1,7 @@
 import logging
 import os
 from tempfile import NamedTemporaryFile
+from typing import override
 
 from google import genai
 from google.genai import types
@@ -66,5 +67,6 @@ class Gemini(BasePlugin):
 
         return response.text
 
+    @override
     def register_handlers(self) -> list[Handler]:
         return [MessageHandler(self.search_handler, filters.command("ask", prefixes=self.prefixes) & filters.me)]

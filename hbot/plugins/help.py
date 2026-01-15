@@ -1,5 +1,5 @@
 import logging
-from typing import cast
+from typing import cast, override
 
 from pyrogram import filters
 from pyrogram.client import Client
@@ -39,5 +39,6 @@ class MyPlugin(BasePlugin):
 
         await message.edit_text(help_string)
 
+    @override
     def register_handlers(self) -> list[Handler]:
         return [MessageHandler(self.help, filters.command("help", prefixes=self.prefixes) & filters.me)]

@@ -4,7 +4,7 @@ import logging
 import re
 import time
 from dataclasses import asdict, dataclass
-from typing import Any, cast
+from typing import Any, cast, override
 
 from jsondb.database import JsonDB
 from pyrogram import filters
@@ -790,6 +790,7 @@ class RM6785Plugin(BasePlugin):
         # we cannot use self._respond here because editing existing message does not mention/tag
         await message.reply_text(msg)
 
+    @override
     def register_handlers(self) -> list[Handler]:
         asyncio.get_running_loop().create_task(PostUtils._on_start(self.app))
         return [

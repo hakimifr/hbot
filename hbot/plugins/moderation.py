@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import override
 
 from pyrogram import filters
 from pyrogram.client import Client
@@ -119,6 +120,7 @@ class ModPlugin(BasePlugin):
         await asyncio.sleep(5)
         await message.delete()
 
+    @override
     def register_handlers(self) -> list[Handler]:
         base = filters.me
         return [

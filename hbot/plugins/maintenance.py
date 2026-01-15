@@ -6,7 +6,7 @@ import shutil
 import subprocess  # noqa S404
 import time
 from functools import partial
-from typing import cast
+from typing import cast, override
 
 from anyio import Path
 from jsondb.database import JsonDB
@@ -130,6 +130,7 @@ class MaintenancePlugin(BasePlugin):
         logger.info("finished")
         await message.edit_text("__done__")
 
+    @override
     def register_handlers(self) -> list[Handler]:
         end_time = time.time()
         db.read_database()

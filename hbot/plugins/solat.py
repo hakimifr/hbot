@@ -3,7 +3,7 @@ import logging
 from dataclasses import dataclass, fields, is_dataclass
 from itertools import chain, islice, repeat
 from textwrap import dedent
-from typing import Any
+from typing import Any, override
 
 from anyio import NamedTemporaryFile
 from httpx import AsyncClient
@@ -176,6 +176,7 @@ class SolatPlugin(BasePlugin):
             await message.reply_document(f.wrapped.name)
             await message.delete()
 
+    @override
     def register_handlers(self) -> list[Handler]:
         return [
             MessageHandler(

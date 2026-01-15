@@ -1,4 +1,5 @@
 import logging
+from typing import override
 
 from pyrogram import filters
 from pyrogram.client import Client
@@ -22,6 +23,7 @@ class PingPlugin(BasePlugin):
         logger.debug("ping, pong!")
         await message.edit_text("Pong!")
 
+    @override
     def register_handlers(self) -> list[Handler]:
         return [
             MessageHandler(

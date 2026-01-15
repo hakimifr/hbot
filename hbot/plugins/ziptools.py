@@ -1,7 +1,7 @@
 import logging
 import time
 from asyncio import AbstractEventLoop, get_running_loop
-from typing import cast
+from typing import cast, override
 from zipfile import ZipFile, is_zipfile
 
 from anyio import NamedTemporaryFile, Path, TemporaryDirectory
@@ -76,6 +76,7 @@ class MyPlugin(BasePlugin):
             logger.info("unzip + upload took %s seconds", duration_unzip_and_upload)
             await message.edit_text(f"__unzip finished, took {duration_unzip_and_upload:.3f}s__")
 
+    @override
     def register_handlers(self) -> list[Handler]:
         return [
             MessageHandler(
