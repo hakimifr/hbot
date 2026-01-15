@@ -127,4 +127,5 @@ class ModPlugin(BasePlugin):
             MessageHandler(self.purge, filters.command("purge", prefixes=self.prefixes) & base),
             MessageHandler(self.ban, filters.command("ban", prefixes=self.prefixes) & base),
             MessageHandler(self.unban, filters.command("unban", prefixes=self.prefixes) & base),
+            MessageHandler(self.kick, filters.command("kick", prefixes=self.prefixes) & base),
         ]
