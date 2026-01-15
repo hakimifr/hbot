@@ -1,14 +1,16 @@
 import asyncio
 import atexit
+import json
 import logging
 import os
 import shutil
 import subprocess  # noqa S404
 import time
+from dataclasses import dataclass
 from functools import partial
 from typing import cast, override
 
-from anyio import Path
+from anyio import NamedTemporaryFile, Path
 from jsondb.database import JsonDB
 from pyrogram import filters
 from pyrogram.client import Client
@@ -22,6 +24,15 @@ from hbot.base_plugin import BasePlugin
 logger = logging.getLogger(__name__)
 db = JsonDB(__name__, PERSIST_DIR)
 update_lock: asyncio.Lock = asyncio.Lock()
+
+
+@dataclass(frozen=True)
+class LogJsonPayload:
+    ts: str
+    level: str
+    logger: str
+    msg: str
+    exc: str = ""
 
 
 class MaintenancePlugin(BasePlugin):
@@ -123,9 +134,38 @@ class MaintenancePlugin(BasePlugin):
 
         logger.info("log file exists")
 
-        async with await log_file.open("r", encoding="utf-8") as f:
+        async with (
+            await log_file.open("r", encoding="utf-8") as f,
+            NamedTemporaryFile("a+", suffix="_parsed.log", encoding="utf-8") as pf,
+        ):
             logger.info("open succeeds, uploading")
             await message.reply_document(f.wrapped.name)
+            logger.info("upload done")
+
+            logger.info("parsing JSON payload of log file into '%s'", pf.wrapped.name)
+            await message.edit_text("__parsing JSON payload of log file__")
+            async for line in f:
+                try:
+                    logger.disabled = True
+                    payload_raw: dict = json.loads(line)
+                    lp: LogJsonPayload = LogJsonPayload(**payload_raw)
+
+                    prefix: str = f"[{lp.ts}] {lp.level}({lp.logger}): "
+                    logmsg: str = f"{prefix}{lp.msg} {lp.exc}"
+                    final: str = logmsg.replace("\n", f"\n{prefix}")
+                    final: str = f"{final}\n"
+                    await pf.write(final)
+                except json.JSONDecodeError:
+                    logger.warning("malformed log line, skipping")
+                    continue
+                finally:
+                    logger.disabled = False
+
+            logger.info("flushing temp file '%s'", pf.wrapped.name)
+            await pf.flush()
+
+            logger.info("uploading parsed log file")
+            await message.reply_document(pf.wrapped.name)
 
         logger.info("finished")
         await message.edit_text("__done__")
