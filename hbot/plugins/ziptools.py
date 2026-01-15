@@ -1,6 +1,7 @@
 import logging
 import time
 from asyncio import AbstractEventLoop, get_running_loop
+from pprint import pformat
 from typing import cast, override
 from zipfile import ZipFile, is_zipfile
 
@@ -76,11 +77,43 @@ class MyPlugin(BasePlugin):
             logger.info("unzip + upload took %s seconds", duration_unzip_and_upload)
             await message.edit_text(f"__unzip finished, took {duration_unzip_and_upload:.3f}s__")
 
+    async def unzipl(self, app: Client, message: Message) -> None:
+        if not message.reply_to_message:
+            await message.edit_text("__reply to the file that you want to unzip__")
+            return
+
+        replied_to_message: Message = cast(Message, message.reply_to_message)
+
+        if not replied_to_message.document:
+            await message.edit_text("__please reply to a zip file__")
+            return
+
+        loop: AbstractEventLoop = get_running_loop()
+        document: Document = cast(Document, replied_to_message.document)
+
+        async with NamedTemporaryFile("w+b", suffix=".zip") as f:
+            logger.info("downloading zip to temp file, name = '%s'", f.wrapped.name)
+            await app.download_media(document, f.wrapped.name, progress=self.progress_logger)
+
+            logger.info("checking zip file validity")
+            if not await loop.run_in_executor(None, is_zipfile, f.wrapped.name):
+                logger.info("zip file is invalid")
+                await message.edit_text("__the file provided is not a zip file__")
+                return
+
+            zipfile: ZipFile = ZipFile(f.wrapped.name)
+            filelist: str = pformat(zipfile)
+            await message.edit_text(f"```{filelist}```")
+
     @override
     def register_handlers(self) -> list[Handler]:
         return [
             MessageHandler(
                 self.unzip,
                 filters.command("unzip", prefixes=self.prefixes) & filters.me,
+            ),
+            MessageHandler(
+                self.unzipl,
+                filters.command("unzipl", prefixes=self.prefixes) & filters.me,
             ),
         ]
