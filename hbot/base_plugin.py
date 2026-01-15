@@ -1,4 +1,5 @@
 import logging
+from typing import final
 
 from jsondb.database import JsonDB
 from pyrogram.client import Client
@@ -31,6 +32,7 @@ class BasePlugin:
 
     # Allow other plugins to change the prefix
     # TODO: add option to reload all modules and/or restart the bot
+    @final
     def change_global_prefix(self, prefixes: list[str]) -> None:
         logger.info("changing global prefixes for bot to %s", prefixes)
         config = JsonDB(__name__, PERSIST_DIR)
