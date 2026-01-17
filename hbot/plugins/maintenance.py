@@ -116,8 +116,11 @@ class MaintenancePlugin(BasePlugin):
             async with NamedTemporaryFile("w", encoding="utf-8", delete=False) as f:
                 await f.write(output)
                 temp_path = f.wrapped.name
-            await message.reply_document(temp_path, caption="__shell output (too long for message)__")
-            await message.edit_text("__command executed, output uploaded as file__")
+            try:
+                await message.reply_document(temp_path, caption="__shell output (too long for message)__")
+                await message.edit_text("__command executed, output uploaded as file__")
+            finally:
+                await Path(temp_path).unlink(missing_ok=True)
         else:
             await message.edit_text(output)
 
@@ -177,7 +180,10 @@ class MaintenancePlugin(BasePlugin):
                     temp_path = tf.wrapped.name
 
                 logger.info("uploading filtered log")
-                await message.reply_document(temp_path, caption=f"__{mode} {lines} lines__")
+                try:
+                    await message.reply_document(temp_path, caption=f"__{mode} {lines} lines__")
+                finally:
+                    await Path(temp_path).unlink(missing_ok=True)
         else:
             # Upload full log
             async with await log_file.open("r", encoding="utf-8") as f:
@@ -271,7 +277,12 @@ class MaintenancePlugin(BasePlugin):
                         async with NamedTemporaryFile("w", encoding="utf-8", delete=False) as f:
                             await f.write(git_diff)
                             diff_path = f.wrapped.name
-                        await self.app.send_document(db.data["chat_id"], diff_path, caption="__git diff from update__")
+                        try:
+                            await self.app.send_document(
+                                db.data["chat_id"], diff_path, caption="__git diff from update__"
+                            )
+                        finally:
+                            await Path(diff_path).unlink(missing_ok=True)
 
                 loop.create_task(send_update_message())
 

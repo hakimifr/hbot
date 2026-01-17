@@ -133,8 +133,11 @@ class MyPlugin(BasePlugin):
                     async with NamedTemporaryFile("w", encoding="utf-8", delete=False) as tf:
                         await tf.write(list_text)
                         temp_path = tf.wrapped.name
-                    await message.reply_document(temp_path, caption="__zip contents__")
-                    await message.edit_text("__list uploaded as file (too long for message)__")
+                    try:
+                        await message.reply_document(temp_path, caption="__zip contents__")
+                        await message.edit_text("__list uploaded as file (too long for message)__")
+                    finally:
+                        await Path(temp_path).unlink(missing_ok=True)
                 else:
                     await message.edit_text(list_text)
             else:
@@ -249,8 +252,11 @@ class MyPlugin(BasePlugin):
                         async with NamedTemporaryFile("w", encoding="utf-8", delete=False) as tf:
                             await tf.write(list_text)
                             temp_path = tf.wrapped.name
-                        await message.reply_document(temp_path, caption="__tar contents__")
-                        await message.edit_text("__list uploaded as file (too long for message)__")
+                        try:
+                            await message.reply_document(temp_path, caption="__tar contents__")
+                            await message.edit_text("__list uploaded as file (too long for message)__")
+                        finally:
+                            await Path(temp_path).unlink(missing_ok=True)
                     else:
                         await message.edit_text(list_text)
                 else:
