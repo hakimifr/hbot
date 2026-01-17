@@ -130,6 +130,9 @@ class MaintenancePlugin(BasePlugin):
         if len(text_parts) > 1:
             try:
                 lines = int(text_parts[1])
+                if lines == 0:
+                    await message.edit_text("__parameter cannot be 0__")
+                    return
                 # Negative number means tail, positive means head
                 if lines < 0:
                     mode = "tail"

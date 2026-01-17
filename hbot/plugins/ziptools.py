@@ -69,23 +69,24 @@ class MyPlugin(BasePlugin):
                 if not filtered_names:
                     await message.edit_text("__no files matched the specified filters__")
                     return
-                namelist: list[Path] = [Path(d).joinpath(x) for x in filtered_names]
             else:
-                namelist: list[Path] = [Path(d).joinpath(x) for x in zipfile.namelist()]
+                filtered_names = zipfile.namelist()
 
-            logger.info("zip file name list (with temp dir): %s", namelist)
+            logger.info("zip file name list: %s", filtered_names)
             logger.info("extracting zip file, dir = '%s'", d)
 
             start_time = time.perf_counter()
             if file_filters:
                 # Extract only filtered files
-                for name in [n.name for n in namelist]:
+                for name in filtered_names:
                     await loop.run_in_executor(None, zipfile.extract, name, d)
             else:
                 await loop.run_in_executor(None, zipfile.extractall, d)
             duration_unzip = time.perf_counter() - start_time
             logger.info("unzip took %s seconds", duration_unzip)
 
+            # Convert to Path objects for file operations
+            namelist: list[Path] = [Path(d).joinpath(x) for x in filtered_names]
             for file in namelist:
                 if await file.is_dir():
                     logger.info("skip uploading '%s' because it is a folder", file.as_posix())
@@ -184,22 +185,23 @@ class MyPlugin(BasePlugin):
                 if not filtered_names:
                     await message.edit_text("__no files matched the specified filters__")
                     return
-                namelist: list[Path] = [Path(d).joinpath(x) for x in filtered_names]
             else:
-                namelist: list[Path] = [Path(d).joinpath(x) for x in tararchive.getnames()]
+                filtered_names = tararchive.getnames()
 
-            logger.info("tar file name list: %s", namelist)
+            logger.info("tar file name list: %s", filtered_names)
             logger.info("extracting tar file, dir = '%s'", d)
 
             start_time = time.perf_counter()
             if file_filters:
-                for name in [n.name for n in namelist]:
+                for name in filtered_names:
                     await loop.run_in_executor(None, tararchive.extract, name, d)
             else:
                 await loop.run_in_executor(None, tararchive.extractall, d)
             duration_extract = time.perf_counter() - start_time
             logger.info("extraction took %s seconds", duration_extract)
 
+            # Convert to Path objects for file operations
+            namelist: list[Path] = [Path(d).joinpath(x) for x in filtered_names]
             for file in namelist:
                 if await file.is_dir():
                     logger.info("skip uploading '%s' because it is a folder", file.as_posix())
