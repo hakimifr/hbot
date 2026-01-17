@@ -1,4 +1,5 @@
 import importlib.util
+import inspect
 import logging
 from collections.abc import Iterable
 from os import PathLike
@@ -13,7 +14,7 @@ from hbot.base_plugin import BasePlugin
 logger = logging.getLogger(__name__)
 
 
-def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -> dict[BasePlugin, list[Handler]]:
+async def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -> dict[BasePlugin, list[Handler]]:
     loaded: dict[BasePlugin, list[Handler]] = {}
     plugins: Iterable[PathLike] = Path(plugins_dir).resolve().glob("*.py")
 
@@ -37,7 +38,13 @@ def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -> dict
             attr = getattr(module, attr_name)
             if isinstance(attr, type) and issubclass(attr, BasePlugin) and attr is not BasePlugin:
                 plugin_instance: BasePlugin = attr(app)
-                handlers: list[Handler] = plugin_instance.register_handlers()
+
+                # Support both sync and async register_handlers
+                register_handlers_method = plugin_instance.register_handlers
+                if inspect.iscoroutinefunction(register_handlers_method):
+                    handlers: list[Handler] = await register_handlers_method()
+                else:
+                    handlers: list[Handler] = register_handlers_method()
 
                 if not isinstance(handlers, list):
                     raise ValueError("method register_handlers MUST return list[Handler]!")

@@ -119,10 +119,77 @@ class ModPlugin(BasePlugin):
         await asyncio.sleep(5)
         await message.delete()
 
+    async def add(self, app: Client, message: Message) -> None:
+        # Parse username from command
+        text_parts = message.text.split()  # type: ignore
+
+        if len(text_parts) < 2:
+            await message.edit_text("__usage: .add <username>__")
+            return
+
+        username = text_parts[1].lstrip("@")
+
+        try:
+            await message.edit_text(f"__adding @{username}...__")
+            await app.add_chat_members(message.chat.id, username)  # type: ignore
+            await message.edit_text(f"__added @{username}__")
+        except (ValueError, RuntimeError, OSError) as e:
+            logger.error("failed to add user: %s", e)
+            await message.edit_text(f"__failed to add user: {str(e)}__")
+
+    async def get_id(self, app: Client, message: Message) -> None:
+        info_text = f"**Chat ID:** `{message.chat.id}`\n"
+
+        if message.reply_to_message:
+            replied = message.reply_to_message
+            if replied.from_user:
+                info_text += f"**User ID:** `{replied.from_user.id}`\n"
+                info_text += f"**Username:** @{replied.from_user.username or 'N/A'}\n"
+        else:
+            if message.from_user:
+                info_text += f"**Your ID:** `{message.from_user.id}`\n"
+
+        await message.edit_text(info_text)
+
+    async def get_info(self, app: Client, message: Message) -> None:
+        if not message.reply_to_message or not message.reply_to_message.from_user:
+            # Get chat info
+            chat = await app.get_chat(message.chat.id)  # type: ignore
+            info_text = "**Chat Information**\n\n"
+            info_text += f"**Title:** {chat.title or 'N/A'}\n"
+            info_text += f"**Type:** {chat.type}\n"
+            info_text += f"**ID:** `{chat.id}`\n"
+            if chat.username:
+                info_text += f"**Username:** @{chat.username}\n"
+            if chat.members_count:
+                info_text += f"**Members:** {chat.members_count}\n"
+            if chat.description:
+                info_text += f"**Description:** {chat.description}\n"
+        else:
+            # Get user info
+            user = message.reply_to_message.from_user
+            info_text = "**User Information**\n\n"
+            info_text += f"**Name:** {user.first_name}"
+            if user.last_name:
+                info_text += f" {user.last_name}"
+            info_text += "\n"
+            info_text += f"**ID:** `{user.id}`\n"
+            if user.username:
+                info_text += f"**Username:** @{user.username}\n"
+            if user.is_bot:
+                info_text += "**Is Bot:** Yes\n"
+            if user.is_premium:
+                info_text += "**Premium:** Yes\n"
+
+        await message.edit_text(info_text)
+
     def register_handlers(self) -> list[Handler]:
         base = filters.me
         return [
             MessageHandler(self.purge, filters.command("purge", prefixes=self.prefixes) & base),
             MessageHandler(self.ban, filters.command("ban", prefixes=self.prefixes) & base),
             MessageHandler(self.unban, filters.command("unban", prefixes=self.prefixes) & base),
+            MessageHandler(self.add, filters.command("add", prefixes=self.prefixes) & base),
+            MessageHandler(self.get_id, filters.command("id", prefixes=self.prefixes) & base),
+            MessageHandler(self.get_info, filters.command("info", prefixes=self.prefixes) & base),
         ]

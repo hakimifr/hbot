@@ -33,7 +33,7 @@ async def main() -> None:
     app = Client("hbot", api_id, api_hash)
 
     logger.info("loading plugins from %s", PLUGINS_DIR)
-    loaded_plugins = load_plugins(app, PLUGINS_DIR)
+    loaded_plugins = await load_plugins(app, PLUGINS_DIR)
 
     try:
         await app.start()
