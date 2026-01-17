@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Awaitable
 from typing import final
 
 from jsondb.database import JsonDB
@@ -43,5 +44,5 @@ class BasePlugin:
 
         config.close()
 
-    def register_handlers(self) -> list[Handler]:
+    def register_handlers(self) -> list[Handler] | Awaitable[list[Handler]]:
         raise NotImplementedError("a plugin must implement this method")
