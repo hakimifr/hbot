@@ -37,3 +37,18 @@ Note that the class `MyPlugin` must be a subclass of [`BasePlugin`](../base_plug
 as this is how the loader knows that this class contains the `register_handler` method that needs
 to be called. The name `MyPlugin` itself is arbitrary; you can name it anything
 you want, as long as it is a subclass of [`BasePlugin`](../base_plugin.py:L10-L43).
+
+## Async register_handlers
+
+The `register_handlers` method can also be defined as an async method (coroutine) if you need to perform
+asynchronous operations during handler registration:
+
+```python
+async def register_handlers(self) -> list[Handler]:
+    # Perform async operations here if needed
+    logger.info("Performing async initialization")
+    await some_async_operation()
+    return [MessageHandler(self.ping, filters.command("ping", prefixes=self.prefixes) & filters.me)]
+```
+
+The plugin loader will automatically detect whether `register_handlers` is sync or async and handle it appropriately.
