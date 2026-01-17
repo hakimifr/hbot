@@ -25,6 +25,9 @@ logger = logging.getLogger(__name__)
 db = JsonDB(__name__, PERSIST_DIR)
 update_lock: asyncio.Lock = asyncio.Lock()
 
+# Configuration constants
+LOG_TRIM_LINES = 1000  # Number of lines to keep when trimming log file
+
 
 @dataclass(frozen=True)
 class LogJsonPayload:
@@ -101,18 +104,34 @@ class MaintenancePlugin(BasePlugin):
 
             # Get git diff before restarting
             logger.info("getting git diff after update")
-            diff_partial = partial(
+
+            # First, check if HEAD@{1} exists (requires reflog)
+            check_reflog_partial = partial(
                 subprocess.run,
-                [git_path, "diff", "HEAD@{1}", "HEAD"],
+                [git_path, "rev-parse", "--verify", "HEAD@{1}"],
                 capture_output=True,
             )
-            diff_result: subprocess.CompletedProcess = await asyncio.get_running_loop().run_in_executor(
+            check_result: subprocess.CompletedProcess = await asyncio.get_running_loop().run_in_executor(
                 None,
-                diff_partial,
+                check_reflog_partial,
             )
 
-            git_diff = diff_result.stdout.decode() if diff_result.returncode == 0 else "Could not get diff"
-            logger.info("git diff retrieved, length: %d bytes", len(git_diff))
+            if check_result.returncode == 0:
+                # Reflog exists, get diff
+                diff_partial = partial(
+                    subprocess.run,
+                    [git_path, "diff", "HEAD@{1}", "HEAD"],
+                    capture_output=True,
+                )
+                diff_result: subprocess.CompletedProcess = await asyncio.get_running_loop().run_in_executor(
+                    None,
+                    diff_partial,
+                )
+                git_diff = diff_result.stdout.decode() if diff_result.returncode == 0 else "Could not get diff"
+                logger.info("git diff retrieved, length: %d bytes", len(git_diff))
+            else:
+                logger.warning("reflog not available or HEAD@{1} does not exist, skipping diff")
+                git_diff = "Git diff not available (reflog disabled or first commit)"
 
             await message.edit_text("__restarting the bot__")
             db.data["update_changelog"] = result.stdout.decode()
@@ -283,15 +302,15 @@ class MaintenancePlugin(BasePlugin):
             return
 
         if trim_mode:
-            logger.info("trimming log file (keeping last 1000 lines)")
+            logger.info("trimming log file (keeping last %d lines)", LOG_TRIM_LINES)
             await message.edit_text("__trimming log file...__")
 
             try:
                 async with await log_file.open("r", encoding="utf-8") as f:
                     all_lines = await f.readlines()
 
-                # Keep last 1000 lines
-                lines_to_keep = all_lines[-1000:] if len(all_lines) > 1000 else all_lines
+                # Keep last LOG_TRIM_LINES lines
+                lines_to_keep = all_lines[-LOG_TRIM_LINES:] if len(all_lines) > LOG_TRIM_LINES else all_lines
                 logger.info("keeping %d lines out of %d", len(lines_to_keep), len(all_lines))
 
                 async with await log_file.open("w", encoding="utf-8") as f:

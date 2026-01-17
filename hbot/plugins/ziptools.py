@@ -1,3 +1,4 @@
+import fnmatch
 import logging
 import tarfile
 import time
@@ -71,14 +72,18 @@ class MyPlugin(BasePlugin):
             if files_to_extract:
                 all_files = zipfile.namelist()
                 namelist: list[Path] = []
-                for requested_file in files_to_extract:
+                matched_files: set[str] = set()
+
+                for requested_pattern in files_to_extract:
                     for zip_file in all_files:
-                        if requested_file in zip_file:
+                        # Use fnmatch for pattern matching (supports wildcards like *.txt)
+                        if fnmatch.fnmatch(zip_file, requested_pattern) and zip_file not in matched_files:
                             namelist.append(Path(d).joinpath(zip_file))
-                            logger.info("will extract: %s", zip_file)
+                            matched_files.add(zip_file)
+                            logger.info("will extract: %s (matched pattern: %s)", zip_file, requested_pattern)
 
                 if not namelist:
-                    logger.warning("no matching files found in zip")
+                    logger.warning("no matching files found in zip for patterns: %s", files_to_extract)
                     await message.edit_text("__no matching files found in zip__")
                     return
 
