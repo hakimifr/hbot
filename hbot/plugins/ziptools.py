@@ -61,43 +61,47 @@ class MyPlugin(BasePlugin):
             await message.edit_text("__unzipping__")
 
             zipfile: ZipFile = ZipFile(f.wrapped.name)
+            try:
+                # Filter files if specified
+                if file_filters:
+                    all_names = zipfile.namelist()
+                    filtered_names = [
+                        name for name in all_names if any(filter_str in name for filter_str in file_filters)
+                    ]
+                    if not filtered_names:
+                        await message.edit_text("__no files matched the specified filters__")
+                        return
+                else:
+                    filtered_names = zipfile.namelist()
 
-            # Filter files if specified
-            if file_filters:
-                all_names = zipfile.namelist()
-                filtered_names = [name for name in all_names if any(filter_str in name for filter_str in file_filters)]
-                if not filtered_names:
-                    await message.edit_text("__no files matched the specified filters__")
-                    return
-            else:
-                filtered_names = zipfile.namelist()
+                logger.info("zip file name list: %s", filtered_names)
+                logger.info("extracting zip file, dir = '%s'", d)
 
-            logger.info("zip file name list: %s", filtered_names)
-            logger.info("extracting zip file, dir = '%s'", d)
+                start_time = time.perf_counter()
+                if file_filters:
+                    # Extract only filtered files
+                    for name in filtered_names:
+                        await loop.run_in_executor(None, zipfile.extract, name, d)
+                else:
+                    await loop.run_in_executor(None, zipfile.extractall, d)
+                duration_unzip = time.perf_counter() - start_time
+                logger.info("unzip took %s seconds", duration_unzip)
 
-            start_time = time.perf_counter()
-            if file_filters:
-                # Extract only filtered files
-                for name in filtered_names:
-                    await loop.run_in_executor(None, zipfile.extract, name, d)
-            else:
-                await loop.run_in_executor(None, zipfile.extractall, d)
-            duration_unzip = time.perf_counter() - start_time
-            logger.info("unzip took %s seconds", duration_unzip)
+                # Convert to Path objects for file operations
+                namelist: list[Path] = [Path(d).joinpath(x) for x in filtered_names]
+                for file in namelist:
+                    if await file.is_dir():
+                        logger.info("skip uploading '%s' because it is a folder", file.as_posix())
+                        continue
 
-            # Convert to Path objects for file operations
-            namelist: list[Path] = [Path(d).joinpath(x) for x in filtered_names]
-            for file in namelist:
-                if await file.is_dir():
-                    logger.info("skip uploading '%s' because it is a folder", file.as_posix())
-                    continue
+                    logger.info("uploading '%s'", file.as_posix())
+                    await message.reply_document(file.as_posix())
 
-                logger.info("uploading '%s'", file.as_posix())
-                await message.reply_document(file.as_posix())
-
-            duration_unzip_and_upload = time.perf_counter() - start_time
-            logger.info("unzip + upload took %s seconds", duration_unzip_and_upload)
-            await message.edit_text(f"__unzip finished, took {duration_unzip_and_upload:.3f}s__")
+                duration_unzip_and_upload = time.perf_counter() - start_time
+                logger.info("unzip + upload took %s seconds", duration_unzip_and_upload)
+                await message.edit_text(f"__unzip finished, took {duration_unzip_and_upload:.3f}s__")
+            finally:
+                zipfile.close()
 
     async def unzipl(self, app: Client, message: Message) -> None:
         if not message.reply_to_message:
@@ -120,26 +124,29 @@ class MyPlugin(BasePlugin):
             logger.info("checking archive validity")
             if await loop.run_in_executor(None, is_zipfile, f.wrapped.name):
                 zipfile: ZipFile = ZipFile(f.wrapped.name)
-                entries = zipfile.namelist()
+                try:
+                    entries = zipfile.namelist()
 
-                list_text = f"**Zip Contents ({len(entries)} entries)**\n\n"
-                for entry in entries:
-                    info = zipfile.getinfo(entry)
-                    size_mb = info.file_size / (1024 * 1024)
-                    list_text += f"`{entry}` - {size_mb:.2f} MB\n"
+                    list_text = f"**Zip Contents ({len(entries)} entries)**\n\n"
+                    for entry in entries:
+                        info = zipfile.getinfo(entry)
+                        size_mb = info.file_size / (1024 * 1024)
+                        list_text += f"`{entry}` - {size_mb:.2f} MB\n"
 
-                # Split if too long
-                if len(list_text) > 4096:
-                    async with NamedTemporaryFile("w", encoding="utf-8", delete=False) as tf:
-                        await tf.write(list_text)
-                        temp_path = tf.wrapped.name
-                    try:
-                        await message.reply_document(temp_path, caption="__zip contents__")
-                        await message.edit_text("__list uploaded as file (too long for message)__")
-                    finally:
-                        await Path(temp_path).unlink(missing_ok=True)
-                else:
-                    await message.edit_text(list_text)
+                    # Split if too long
+                    if len(list_text) > 4096:
+                        async with NamedTemporaryFile("w", encoding="utf-8", delete=False) as tf:
+                            await tf.write(list_text)
+                            temp_path = tf.wrapped.name
+                        try:
+                            await message.reply_document(temp_path, caption="__zip contents__")
+                            await message.edit_text("__list uploaded as file (too long for message)__")
+                        finally:
+                            await Path(temp_path).unlink(missing_ok=True)
+                    else:
+                        await message.edit_text(list_text)
+                finally:
+                    zipfile.close()
             else:
                 await message.edit_text("__the file provided is not a zip file__")
 
