@@ -180,42 +180,46 @@ class MyPlugin(BasePlugin):
             await message.edit_text("__extracting tar__")
 
             tararchive = await loop.run_in_executor(None, tarfile.open, f.wrapped.name)
+            try:
+                # Filter files if specified
+                if file_filters:
+                    all_names = tararchive.getnames()
+                    filtered_names = [
+                        name for name in all_names if any(filter_str in name for filter_str in file_filters)
+                    ]
+                    if not filtered_names:
+                        await message.edit_text("__no files matched the specified filters__")
+                        return
+                else:
+                    filtered_names = tararchive.getnames()
 
-            # Filter files if specified
-            if file_filters:
-                all_names = tararchive.getnames()
-                filtered_names = [name for name in all_names if any(filter_str in name for filter_str in file_filters)]
-                if not filtered_names:
-                    await message.edit_text("__no files matched the specified filters__")
-                    return
-            else:
-                filtered_names = tararchive.getnames()
+                logger.info("tar file name list: %s", filtered_names)
+                logger.info("extracting tar file, dir = '%s'", d)
 
-            logger.info("tar file name list: %s", filtered_names)
-            logger.info("extracting tar file, dir = '%s'", d)
+                start_time = time.perf_counter()
+                if file_filters:
+                    for name in filtered_names:
+                        await loop.run_in_executor(None, tararchive.extract, name, d)
+                else:
+                    await loop.run_in_executor(None, tararchive.extractall, d)
+                duration_extract = time.perf_counter() - start_time
+                logger.info("extraction took %s seconds", duration_extract)
 
-            start_time = time.perf_counter()
-            if file_filters:
-                for name in filtered_names:
-                    await loop.run_in_executor(None, tararchive.extract, name, d)
-            else:
-                await loop.run_in_executor(None, tararchive.extractall, d)
-            duration_extract = time.perf_counter() - start_time
-            logger.info("extraction took %s seconds", duration_extract)
+                # Convert to Path objects for file operations
+                namelist: list[Path] = [Path(d).joinpath(x) for x in filtered_names]
+                for file in namelist:
+                    if await file.is_dir():
+                        logger.info("skip uploading '%s' because it is a folder", file.as_posix())
+                        continue
 
-            # Convert to Path objects for file operations
-            namelist: list[Path] = [Path(d).joinpath(x) for x in filtered_names]
-            for file in namelist:
-                if await file.is_dir():
-                    logger.info("skip uploading '%s' because it is a folder", file.as_posix())
-                    continue
+                    logger.info("uploading '%s'", file.as_posix())
+                    await message.reply_document(file.as_posix())
 
-                logger.info("uploading '%s'", file.as_posix())
-                await message.reply_document(file.as_posix())
-
-            duration_total = time.perf_counter() - start_time
-            logger.info("extract + upload took %s seconds", duration_total)
-            await message.edit_text(f"__extraction finished, took {duration_total:.3f}s__")
+                duration_total = time.perf_counter() - start_time
+                logger.info("extract + upload took %s seconds", duration_total)
+                await message.edit_text(f"__extraction finished, took {duration_total:.3f}s__")
+            finally:
+                tararchive.close()
 
     async def untarl(self, app: Client, message: Message) -> None:
         if not message.reply_to_message:
@@ -239,26 +243,29 @@ class MyPlugin(BasePlugin):
             try:
                 if await loop.run_in_executor(None, tarfile.is_tarfile, f.wrapped.name):
                     tararchive = await loop.run_in_executor(None, tarfile.open, f.wrapped.name)
-                    entries = tararchive.getnames()
+                    try:
+                        entries = tararchive.getnames()
 
-                    list_text = f"**Tar Contents ({len(entries)} entries)**\n\n"
-                    for entry in entries:
-                        member = tararchive.getmember(entry)
-                        size_mb = member.size / (1024 * 1024)
-                        list_text += f"`{entry}` - {size_mb:.2f} MB\n"
+                        list_text = f"**Tar Contents ({len(entries)} entries)**\n\n"
+                        for entry in entries:
+                            member = tararchive.getmember(entry)
+                            size_mb = member.size / (1024 * 1024)
+                            list_text += f"`{entry}` - {size_mb:.2f} MB\n"
 
-                    # Split if too long
-                    if len(list_text) > 4096:
-                        async with NamedTemporaryFile("w", encoding="utf-8", delete=False) as tf:
-                            await tf.write(list_text)
-                            temp_path = tf.wrapped.name
-                        try:
-                            await message.reply_document(temp_path, caption="__tar contents__")
-                            await message.edit_text("__list uploaded as file (too long for message)__")
-                        finally:
-                            await Path(temp_path).unlink(missing_ok=True)
-                    else:
-                        await message.edit_text(list_text)
+                        # Split if too long
+                        if len(list_text) > 4096:
+                            async with NamedTemporaryFile("w", encoding="utf-8", delete=False) as tf:
+                                await tf.write(list_text)
+                                temp_path = tf.wrapped.name
+                            try:
+                                await message.reply_document(temp_path, caption="__tar contents__")
+                                await message.edit_text("__list uploaded as file (too long for message)__")
+                            finally:
+                                await Path(temp_path).unlink(missing_ok=True)
+                        else:
+                            await message.edit_text(list_text)
+                    finally:
+                        tararchive.close()
                 else:
                     await message.edit_text("__the file provided is not a tar file__")
             except (OSError, tarfile.TarError) as e:
