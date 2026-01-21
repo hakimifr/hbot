@@ -20,6 +20,7 @@ ignore = [
     # Usage of assert - we are never running Python with O and we are only
     # using assert to satisfy linter
     "S101",
+    "BLE001",  # allow bare exception
 ]
 fixable = ["ALL"]
 unfixable = []
