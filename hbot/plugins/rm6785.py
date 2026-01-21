@@ -3,7 +3,9 @@ import atexit
 import logging
 import re
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import asdict, dataclass
+from functools import wraps
 from typing import Any, cast, override
 
 from jsondb.database import JsonDB
@@ -37,6 +39,10 @@ type StickerId                  = str
 
 RM6785_CHANNEL_ID: ChannelId = -1001384382397
 RM6785_STICKER_ID: StickerId = "CAACAgUAAx0EX9CqtwACBvdpYhcQ4xFR18TbqiDxMasDZ4EWOQACLwQAAt4AAXFVonEmaEmbIrYeBA"
+TRIGGER_WHITELISTS: list[ChatId] = [
+    -1001155763792,
+    -1001299514785,
+]
 SUPERUSERS: dict[UserIdAuthDbKey, Name] = {
     "1024853832": "hakimi",
     "1138003186": "samar",
@@ -626,6 +632,22 @@ class RM6785Plugin(BasePlugin):
         reply_message = await message.reply_text(text)
         return reply_message
 
+    @staticmethod
+    def run_only_whitelist(whitelists: list[ChatId] = TRIGGER_WHITELISTS):
+        def decorator(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
+            @wraps(func)
+            async def wrapper(self, app: Client, message: Message) -> Any:
+                chat_id: int = cast(int, cast(Chat, message.chat).id)
+                if chat_id not in whitelists:
+                    logger.info("chat with id=%d is not in whitelist, skipping", chat_id)
+                    return None
+                return await func(self, app, message)
+
+            return wrapper
+
+        return decorator
+
+    @run_only_whitelist()
     async def auth(self, app: Client, message: Message) -> None:
         user: User = cast(User, message.from_user)
         if not AuthUtils.is_superuser(user.id):
@@ -651,6 +673,7 @@ class RM6785Plugin(BasePlugin):
                 "__user is now authorised__",
             )
 
+    @run_only_whitelist()
     async def deauth(self, app: Client, message: Message) -> None:
         user: User = cast(User, message.from_user)
         if not AuthUtils.is_superuser(user.id):
@@ -676,6 +699,7 @@ class RM6785Plugin(BasePlugin):
                 "__user is now deauthorised__",
             )
 
+    @run_only_whitelist()
     async def lint(self, app: Client, message: Message) -> None:
         if not message.reply_to_message:
             await self._respond(app, message, "__please reply to a message__")
@@ -702,6 +726,7 @@ class RM6785Plugin(BasePlugin):
         vote_count = VoteUtils.get_vote_count(reply_to_message.id)
         await message.reply_text(f"__approval count: {vote_count}/3__")
 
+    @run_only_whitelist()
     async def vote(self, app: Client, message: Message) -> None:
         user = cast(User, message.from_user)
 
@@ -722,6 +747,7 @@ class RM6785Plugin(BasePlugin):
         else:
             await self._respond(app, message, f"__approval failed, LintUtils reason: {status.error_string}__")
 
+    @run_only_whitelist()
     async def remove_vote(self, app: Client, message: Message) -> None:
         user = cast(User, message.from_user)
 
@@ -742,6 +768,7 @@ class RM6785Plugin(BasePlugin):
         else:
             await self._respond(app, message, f"__approval removal failed, LintUtils reason: {status.error_string}__")
 
+    @run_only_whitelist()
     async def post(self, app: Client, message: Message) -> None:
         user = cast(User, message.from_user)
 
@@ -763,10 +790,11 @@ class RM6785Plugin(BasePlugin):
         confirmation_message = await self._respond(app, message, "__please wait__")
         asyncio.create_task(PostUtils.post(app, confirmation_message, message.reply_to_message))
 
+    @run_only_whitelist()
     async def cancel(self, app: Client, message: Message) -> None:
         user = cast(User, message.from_user)
 
-        if not AuthUtils.get_authorised_users().get(user.id):
+        if not AuthUtils.get_authorised_users().get(user.id):  # type: ignore
             await self._respond(app, message, "__you are not authorised__")
             return
 
@@ -782,6 +810,7 @@ class RM6785Plugin(BasePlugin):
         else:
             await confirmation_message.edit_text(f"__error: PostUtil: {status.error_string}__")
 
+    @run_only_whitelist()
     async def lsauth(self, app: Client, message: Message) -> None:
         auth_users: dict[UserIdAuthDbKey, Name] = AuthUtils.get_authorised_users()
 
