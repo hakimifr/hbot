@@ -1,8 +1,10 @@
 import asyncio
 import atexit
+import gc
 import json
 import logging
 import os
+import resource
 import shutil
 import subprocess  # noqa S404
 import time
@@ -333,6 +335,21 @@ class MaintenancePlugin(BasePlugin):
                 logger.error("failed to delete log file: %s", e)
                 await message.edit_text(f"__failed to delete log: {e}__")
 
+    async def triggergc(self, app: Client, message: Message) -> None:
+        logger.info("calling garbage collector")
+        await message.edit_text("calling garbage collector")
+
+        ram_usage_before_mb: float = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+        collected: int = gc.collect()
+        ram_usage_after_mb: float = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+
+        logger.info(
+            "done. ram_usage_before_mb=%d, ram_usage_after_mb=%d, collected(unreachable objects)=%d",
+            ram_usage_before_mb,
+            ram_usage_after_mb,
+        )
+        await message.edit_text(f"done. {ram_usage_before_mb=}, {ram_usage_after_mb=}, {collected=}")
+
     @override
     def register_handlers(self) -> list[Handler]:
         end_time = time.time()
@@ -407,5 +424,9 @@ class MaintenancePlugin(BasePlugin):
             MessageHandler(
                 self.dellog,
                 filters.command("dellog", prefixes=self.prefixes) & filters.me,
+            ),
+            MessageHandler(
+                self.triggergc,
+                filters.command("triggergc", prefixes=self.prefixes) & filters.me,
             ),
         ]
