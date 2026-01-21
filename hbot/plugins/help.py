@@ -31,11 +31,18 @@ class MyPlugin(BasePlugin):
         for plugin, handlers in loaded_plugins.items():
             logger.info("processing plugin '%s' for help text", plugin.name)
             help_string += f"**📦 {plugin.name}**\n"
-            help_string += f"_{plugin.description}_\n\n"
+            help_string += f"__{plugin.description}__\n"
 
             commands = []
             for h in handlers:
-                for x in (h.filters.base, h.filters.other):  # type: ignore
+                a = []
+                if b := getattr(h.filters, "base", None):
+                    a.append(b)
+                if b := getattr(h.filters, "other", None):
+                    a.append(b)
+                if not getattr(h.filters, "base", None) and not getattr(h.filters, "other", None):
+                    a.append(h.filters)
+                for x in a:  # type: ignore
                     if type(x).__name__ == "CommandFilter":
                         x.commands = cast(set, x.commands)
                         for cmd in x.commands:
@@ -45,7 +52,7 @@ class MyPlugin(BasePlugin):
             if commands:
                 help_string += "\n".join(commands) + "\n"
             else:
-                help_string += "  _No commands available_\n"
+                help_string += "  __No commands available__\n"
 
             help_string += "\n"
 
