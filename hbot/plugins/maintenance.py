@@ -347,6 +347,7 @@ class MaintenancePlugin(BasePlugin):
             "done. ram_usage_before_mb=%d, ram_usage_after_mb=%d, collected(unreachable objects)=%d",
             ram_usage_before_mb,
             ram_usage_after_mb,
+            collected,
         )
         await message.edit_text(f"done. {ram_usage_before_mb=}, {ram_usage_after_mb=}, {collected=}")
 
