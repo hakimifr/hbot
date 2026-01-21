@@ -58,8 +58,10 @@ class MaintenancePlugin(BasePlugin):
         # cleanup
         atexit._run_exitfuncs()
 
-        uv_path: str = shutil.which("uv") or "/usr/bin/uv"  # fallback to hardcoded path
-        os.execl(uv_path, "uv", "run", "python3", "-m", "hbot")  # noqa: S606
+        python_path: str | None = shutil.which("python3")
+        if not python_path:
+            raise RuntimeError("cannot find python3 executable")
+        os.execl(python_path, "python3", "-m", "hbot")  # noqa: S606
 
     async def restart(self, app: Client, message: Message) -> None:
         if update_lock.locked():
