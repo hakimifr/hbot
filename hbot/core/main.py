@@ -7,8 +7,8 @@ from pyrogram.handlers.handler import Handler
 from pyrogram.sync import idle
 
 from hbot import PERSIST_DIR, PLUGINS_DIR
-from hbot.base_plugin import BasePlugin
-from hbot.plugins_loader import load_plugins
+from hbot.core.base_plugin import BasePlugin
+from hbot.core.plugins_loader import load_plugins
 
 logger = logging.getLogger(__name__)
 loaded_plugins: dict[BasePlugin, list[Handler]] = {}

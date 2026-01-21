@@ -19,7 +19,7 @@ from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
 from hbot import PERSIST_DIR
-from hbot.base_plugin import BasePlugin
+from hbot.core.base_plugin import BasePlugin
 
 logger = logging.getLogger(__name__)
 db = JsonDB(__name__, PERSIST_DIR)

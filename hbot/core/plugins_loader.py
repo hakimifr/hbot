@@ -9,7 +9,7 @@ from pyrogram.client import Client
 from pyrogram.handlers.handler import Handler
 
 from hbot import PLUGINS_DIR
-from hbot.base_plugin import BasePlugin
+from hbot.core.base_plugin import BasePlugin
 
 logger = logging.getLogger(__name__)
 

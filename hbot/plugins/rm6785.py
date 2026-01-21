@@ -16,7 +16,7 @@ from pyrogram.types import Chat, MessageEntity, User
 from pyrogram.types.messages_and_media import Message
 
 from hbot import PERSIST_DIR
-from hbot.base_plugin import BasePlugin
+from hbot.core.base_plugin import BasePlugin
 
 # ruff: disable[E221]
 # fmt: off

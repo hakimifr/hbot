@@ -7,7 +7,7 @@ from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
-from hbot.base_plugin import BasePlugin
+from hbot.core.base_plugin import BasePlugin
 
 logger = logging.getLogger(__name__)
 
