@@ -10,7 +10,7 @@ import subprocess  # noqa S404
 import time
 from dataclasses import dataclass
 from functools import partial
-from typing import cast, override
+from typing import Never, cast, override
 
 from anyio import NamedTemporaryFile, Path
 from jsondb.database import JsonDB
@@ -47,7 +47,7 @@ class MaintenancePlugin(BasePlugin):
     def __init__(self, app: Client) -> None:
         self.app: Client = app
 
-    def _perform_restart(self, message: Message) -> None:
+    def _perform_restart(self, message: Message) -> Never:
         begin_time = time.time()
         db.data["begin_time"] = begin_time
         db.data["chat_id"] = message.chat.id  # type: ignore
