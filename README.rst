@@ -41,6 +41,13 @@ Here's a snippet where that happens:
 
            [...snipped...]
 
+Once you meet the prerequisites above, you can run the bot with uv_:
+
+.. code-block:: sh
+
+   uv sync --frozen
+   uv run python3 -m hbot
+
 Hosting
 =======
 
