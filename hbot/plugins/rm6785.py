@@ -845,14 +845,24 @@ class RM6785Plugin(BasePlugin):
         match RM6785_CHANNEL_ID:
             case RM6785ChannelId.Official.value:
                 logger.info("switching to test mode (using test channel id = %d)", RM6785ChannelId.Test.value)
-                await self._respond(app, message, "switching to test mode")
+                await self._respond(app, message, "__switching to test mode__")
                 RM6785_CHANNEL_ID = RM6785ChannelId.Test.value
             case RM6785ChannelId.Test.value:
                 logger.info("switching to official mode (using channel id = %d)", RM6785ChannelId.Official.value)
-                await self._respond(app, message, "switching to official mode")
+                await self._respond(app, message, "__switching to official mode__")
                 RM6785_CHANNEL_ID = RM6785ChannelId.Official.value
             case _:
                 assert_never()
+
+    async def post_autodetector(self, app: Client, message: Message) -> None:
+        assert message.caption and isinstance(message.caption, str)
+        if "#ROM" not in message.caption and "#KERNEL" not in message.caption:
+            logger.info("caption found, but is not a post (cannot find #ROM or #KERNEL), ignoring")
+            return
+
+        logger.info("post found, calling linter")
+        reply: Message = await message.reply_text("__post detected, linting__")
+        await self.lint(app, reply)
 
     @override
     def register_handlers(self) -> list[Handler]:
@@ -893,5 +903,9 @@ class RM6785Plugin(BasePlugin):
             MessageHandler(
                 self.testmode,
                 filters.command("testmode", prefixes=self.prefixes),
+            ),
+            MessageHandler(
+                self.post_autodetector,
+                filters.caption,
             ),
         ]
