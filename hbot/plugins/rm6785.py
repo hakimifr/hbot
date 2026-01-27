@@ -5,8 +5,9 @@ import re
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import asdict, dataclass
+from enum import Enum
 from functools import wraps
-from typing import Any, cast, override
+from typing import Any, assert_never, cast, override
 
 from jsondb.database import JsonDB
 from pyrogram import filters
@@ -37,7 +38,13 @@ type StickerId                  = str
 # fmt: on
 # ruff: enable[E221]
 
-RM6785_CHANNEL_ID: ChannelId = -1001384382397
+
+class RM6785ChannelId(Enum):
+    Test: int = -1002107091036
+    Official: int = -1001384382397
+
+
+RM6785_CHANNEL_ID: ChannelId = RM6785ChannelId.Official.value
 RM6785_STICKER_ID: StickerId = "CAACAgUAAx0EX9CqtwACBvdpYhcQ4xFR18TbqiDxMasDZ4EWOQACLwQAAt4AAXFVonEmaEmbIrYeBA"
 TRIGGER_WHITELISTS: list[ChatId] = [
     -1001155763792,
@@ -47,6 +54,8 @@ SUPERUSERS: dict[UserIdAuthDbKey, Name] = {
     "1024853832": "hakimi",
     "1138003186": "samar",
 }
+
+
 logger: logging.Logger = logging.getLogger(__name__)
 
 
@@ -824,6 +833,27 @@ class RM6785Plugin(BasePlugin):
         # we cannot use self._respond here because editing existing message does not mention/tag
         await message.reply_text(msg)
 
+    @run_only_whitelist()
+    async def testmode(self, app: Client, message: Message) -> None:
+        global RM6785_CHANNEL_ID
+        user = cast(User, message.from_user)
+
+        if not AuthUtils.get_authorised_users().get(user.id):  # type: ignore
+            await self._respond(app, message, "__you are not authorised__")
+            return
+
+        match RM6785_CHANNEL_ID:
+            case RM6785ChannelId.Official.value:
+                logger.info("switching to test mode (using test channel id = %d)", RM6785ChannelId.Test.value)
+                await self._respond(app, message, "switching to test mode")
+                RM6785_CHANNEL_ID = RM6785ChannelId.Test.value
+            case RM6785ChannelId.Test.value:
+                logger.info("switching to official mode (using channel id = %d)", RM6785ChannelId.Official.value)
+                await self._respond(app, message, "switching to official mode")
+                RM6785_CHANNEL_ID = RM6785ChannelId.Official.value
+            case _:
+                assert_never()
+
     @override
     def register_handlers(self) -> list[Handler]:
         asyncio.get_running_loop().create_task(PostUtils._on_start(self.app))
@@ -859,5 +889,9 @@ class RM6785Plugin(BasePlugin):
             MessageHandler(
                 self.lsauth,
                 filters.command("lsauth", prefixes=self.prefixes),
+            ),
+            MessageHandler(
+                self.testmode,
+                filters.command("testmode", prefixes=self.prefixes),
             ),
         ]
