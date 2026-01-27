@@ -1,19 +1,16 @@
-.. hbot documentation master file, created by
-   sphinx-quickstart on Sat Jan 24 01:44:27 2026.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 ##################
 hbot documentation
 ##################
 
 .. important::
-   This documentation is intended for myself, so is this hbot. Should you have
-   any trouble using this bot, you can `contact me`_ for help, but know that I
-   might not always be able to help. (Please note in your message about this
+   This documentation is intended for myself, so is this hbot. But it is made in a very modular way,
+   so you should be able to use this very easily (see `the plugins section`_). Should you
+   have any trouble using this bot, you can `contact me`_ for help, but know that I might not always
+   be able to help. (Please note in your message about this
    bot, otherwise I won't reply.
 
 .. _contact me: https//t.me/hakimifr
+.. _the plugins section: /plugins
 
 Usage Instruction
 =================
