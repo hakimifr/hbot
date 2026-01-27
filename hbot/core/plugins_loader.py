@@ -24,7 +24,7 @@ async def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -
 
         logger.info("loading: '%s'", file.name)
 
-        module_name = f"dynamically_loaded_plugin_{file.stem}"
+        module_name = f"plugin_{file.stem}"
         spec = importlib.util.spec_from_file_location(module_name, file)
 
         if spec is None or spec.loader is None:
