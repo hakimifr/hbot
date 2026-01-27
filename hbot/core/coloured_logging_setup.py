@@ -72,6 +72,8 @@ class _JsonFormatter(logging.Formatter):
             "level": record.levelname,
             "logger": record.name,
             "msg": record.getMessage(),
+            "lineno": record.lineno,
+            "funcname": record.funcName,
         }
 
         if record.exc_info:
@@ -130,10 +132,10 @@ def configure_logging() -> None:
             "disable_existing_loggers": False,
             "filters": {"drop_httpx": {"()": _DropHttpxNoise}},  # ty: ignore[missing-typed-dict-key,invalid-key]
             "formatters": {
-                "plain": {"format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"},
+                "plain": {"format": "%(asctime)s [%(levelname)s] <%(funcName)s:%(lineno)d> %(name)s: %(message)s"},
                 "color": {
                     "()": _ColorFormatter,
-                    "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+                    "format": "%(asctime)s [%(levelname)s] <%(funcName)s:%(lineno)d> %(name)s: %(message)s",
                 },
                 "json": {"()": _JsonFormatter},
             },

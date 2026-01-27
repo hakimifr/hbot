@@ -36,6 +36,8 @@ class LogJsonPayload:
     ts: str
     level: str
     logger: str
+    lineno: int
+    funcname: str
     msg: str
     exc: str = ""
 
@@ -270,7 +272,7 @@ class MaintenancePlugin(BasePlugin):
                     payload_raw: dict = json.loads(line)
                     lp: LogJsonPayload = LogJsonPayload(**payload_raw)
 
-                    prefix: str = f"[{lp.ts}] {lp.level}({lp.logger}): "
+                    prefix: str = f"[{lp.ts}] {lp.level} <{lp.funcname}:{lp.lineno}> ({lp.logger}): "
                     logmsg: str = f"{prefix}{lp.msg} {lp.exc}"
                     final: str = logmsg.replace("\n", f"\n{prefix}")
                     final: str = f"{final}\n"
