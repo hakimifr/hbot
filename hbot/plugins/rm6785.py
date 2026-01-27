@@ -603,11 +603,12 @@ class PostUtils:
             if task.cancelled():
                 await confirmation_message.edit_text("__post cancelled__")
                 return
-            remaining_time = 5 - (time.perf_counter() - start_time)
-            remaining_time_mins = remaining_time // 60
-            remaining_time_secs = remaining_time % 60
+
+            elapsed_time = time.perf_counter() - start_time
+            remaining_time_mins = 5 - (elapsed_time // 60)
+            remaining_time_secs = 60 - (elapsed_time % 60)
             await confirmation_message.edit_text(
-                f"__time remaining: {remaining_time_mins:.2f} minute(s) and {remaining_time_secs} seconds__"
+                f"__time remaining: {remaining_time_mins} minute(s) and {remaining_time_secs:.2f} seconds__"
             )
             await asyncio.sleep(2)
 
