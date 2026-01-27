@@ -808,7 +808,7 @@ class RM6785Plugin(BasePlugin):
     async def cancel(self, app: Client, message: Message) -> None:
         user = cast(User, message.from_user)
 
-        if not AuthUtils.get_authorised_users().get(user.id):  # type: ignore
+        if not AuthUtils.get_authorised_users().get(str(user.id)):  # type: ignore
             await self._respond(app, message, "__you are not authorised__")
             return
 
@@ -838,7 +838,7 @@ class RM6785Plugin(BasePlugin):
         global RM6785_CHANNEL_ID
         user = cast(User, message.from_user)
 
-        if not AuthUtils.get_authorised_users().get(user.id):  # type: ignore
+        if not AuthUtils.get_authorised_users().get(str(user.id)):  # type: ignore
             await self._respond(app, message, "__you are not authorised__")
             return
 
