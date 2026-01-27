@@ -784,6 +784,7 @@ class RM6785Plugin(BasePlugin):
 
     @run_only_whitelist()
     async def post(self, app: Client, message: Message) -> None:
+        assert message.text
         user = cast(User, message.from_user)
 
         if not AuthUtils.get_authorised_users().get(str(user.id)):
@@ -797,8 +798,12 @@ class RM6785Plugin(BasePlugin):
         reply_to_message = cast(Message, message.reply_to_message)
         vote_count = VoteUtils.get_vote_count(reply_to_message.id)
 
-        if vote_count < 3:
+        if vote_count < 3 and "--force" not in message.text:
             await self._respond(app, message, "__not enough approvals__")
+            return
+
+        if "--force" in message.text and not AuthUtils.is_superuser(user.id):
+            await self._respond(app, message, "__You are not superuser!__")
             return
 
         confirmation_message = await self._respond(app, message, "__please wait__")
@@ -808,7 +813,7 @@ class RM6785Plugin(BasePlugin):
     async def cancel(self, app: Client, message: Message) -> None:
         user = cast(User, message.from_user)
 
-        if not AuthUtils.get_authorised_users().get(str(user.id)):  # type: ignore
+        if not AuthUtils.get_authorised_users().get(str(user.id)):
             await self._respond(app, message, "__you are not authorised__")
             return
 
