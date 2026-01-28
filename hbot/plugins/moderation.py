@@ -1,11 +1,12 @@
 import asyncio
 import logging
-from typing import override
+from typing import cast, override
 
 from pyrogram import filters
 from pyrogram.client import Client
 from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
+from pyrogram.types import Chat, ChatSettings
 from pyrogram.types.messages_and_media import Message
 
 from hbot.core.base_plugin import BasePlugin
@@ -34,6 +35,15 @@ class ModPlugin(BasePlugin):
     async def purge(self, app: Client, message: Message) -> None:
         if not message.reply_to_message:
             await message.edit_text("__reply to a message!__")
+            return
+
+        chat = cast(Chat, message.chat)
+        message.text = cast(str, message.text)
+
+        if chat.is_forum and "--force" not in message.text:
+            await message.edit_text(
+                "__using this command in topic-enabled chat is a bad idea, use --force to do it anyway.__"
+            )
             return
 
         logger.info("purging messages")
