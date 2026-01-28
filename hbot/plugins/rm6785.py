@@ -40,11 +40,11 @@ type StickerId                  = str
 
 
 class RM6785ChannelId(Enum):
-    Test: int = -1002107091036
-    Official: int = -1001384382397
+    Test = -1002107091036
+    Official = -1001384382397
 
 
-RM6785_CHANNEL_ID: ChannelId = RM6785ChannelId.Official.value
+RM6785_CHANNEL_ID: RM6785ChannelId = RM6785ChannelId.Official
 RM6785_STICKER_ID: StickerId = "CAACAgUAAx0EX9CqtwACBvdpYhcQ4xFR18TbqiDxMasDZ4EWOQACLwQAAt4AAXFVonEmaEmbIrYeBA"
 TRIGGER_WHITELISTS: list[ChatId] = [
     -1001155763792,
@@ -576,13 +576,13 @@ class PostUtils:
     async def _run_delayed(reply_to_message: Message, delay_in_minutes: float = 5):
         try:
             await asyncio.sleep(delay_in_minutes * 60)
-            await reply_to_message.copy(RM6785_CHANNEL_ID)
+            await reply_to_message.copy(RM6785_CHANNEL_ID.value)
         except asyncio.CancelledError:
             raise
 
     @classmethod
     async def post(cls, app: Client, confirmation_message: Message, reply_to_message: Message) -> None:
-        msg = await app.send_sticker(RM6785_CHANNEL_ID, RM6785_STICKER_ID)
+        msg = await app.send_sticker(RM6785_CHANNEL_ID.value, RM6785_STICKER_ID)
         msg = cast(Message, msg)
         chat = cast(Chat, msg.chat)
 
@@ -849,16 +849,16 @@ class RM6785Plugin(BasePlugin):
             return
 
         match RM6785_CHANNEL_ID:
-            case RM6785ChannelId.Official.value:
+            case RM6785ChannelId.Official:
                 logger.info("switching to test mode (using test channel id = %d)", RM6785ChannelId.Test.value)
                 await self._respond(app, message, "__switching to test mode__")
-                RM6785_CHANNEL_ID = RM6785ChannelId.Test.value
-            case RM6785ChannelId.Test.value:
+                RM6785_CHANNEL_ID = RM6785ChannelId.Test
+            case RM6785ChannelId.Test:
                 logger.info("switching to official mode (using channel id = %d)", RM6785ChannelId.Official.value)
                 await self._respond(app, message, "__switching to official mode__")
-                RM6785_CHANNEL_ID = RM6785ChannelId.Official.value
+                RM6785_CHANNEL_ID = RM6785ChannelId.Official
             case _:
-                assert_never()
+                assert_never(RM6785_CHANNEL_ID)
 
     async def post_autodetector(self, app: Client, message: Message) -> None:
         assert message.caption and isinstance(message.caption, str)
