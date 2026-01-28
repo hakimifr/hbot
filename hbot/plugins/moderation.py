@@ -6,7 +6,7 @@ from pyrogram import filters
 from pyrogram.client import Client
 from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
-from pyrogram.types import Chat, ChatSettings
+from pyrogram.types import Chat
 from pyrogram.types.messages_and_media import Message
 
 from hbot.core.base_plugin import BasePlugin

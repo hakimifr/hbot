@@ -43,7 +43,6 @@ class BasePlugin(ABC):
     # Allow other plugins to change the prefix
     config.close()
 
-    @final
     def __init__(self, app: Client) -> None:
         self.app: Client = app
 
