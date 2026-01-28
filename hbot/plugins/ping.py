@@ -3,11 +3,10 @@ from typing import override
 
 from pyrogram import filters
 from pyrogram.client import Client
-from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
-from hbot.core.base_plugin import BasePlugin
+from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +23,12 @@ class PingPlugin(BasePlugin):
         await message.edit_text("Pong!")
 
     @override
-    def register_handlers(self) -> list[Handler]:
-        return [
-            MessageHandler(
-                self.ping,
-                filters.command("ping", prefixes=self.prefixes) & filters.me,
-            ),
-        ]
+    def register_handlers(self) -> RegisterHandlerResult:
+        return RegisterHandlerResult(
+            handlers=[
+                MessageHandler(
+                    self.ping,
+                    filters.command("ping", prefixes=self.prefixes) & filters.me,
+                ),
+            ]
+        )

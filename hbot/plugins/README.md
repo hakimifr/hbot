@@ -5,6 +5,7 @@ Take a look at the example plugin below, to see how the implementation works.
 
 ```python
 import logging
+from collections.abc import Awaitable
 from typing import override
 
 from pyrogram import filters
@@ -13,7 +14,7 @@ from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
-from hbot.base_plugin import BasePlugin
+from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +31,15 @@ class MyPlugin(BasePlugin):
         await message.edit_text("Pong!")
 
     @override
-    def register_handlers(self) -> list[Handler] | Awaitable[list[Handler]]:
-        return [MessageHandler(self.ping, filters.command("ping", prefixes=self.prefixes) & filters.me)]
+    def register_handlers(self) -> RegisterHandlerResult | Awaitable[RegisterHandlerResult]:
+        return RegisterHandlerResult(
+            # You do not need to specify group, it's 0 by default. Advanced use case will require
+            # this to other value though.
+            group=0,
+            handlers=[
+                MessageHandler(self.ping, filters.command("ping", prefixes=self.prefixes) & filters.me),
+            ],
+        )
 ```
 
 The plugin loader will call the method `register_handlers`, so it MUST be defined. Note that the
@@ -47,11 +55,15 @@ Awaitable[list[Handler]]`, which means the method can either be regular method (
 method. This is useful if you need to perform asynchronous operations during handler registration:
 
 ```python
-async def register_handlers(self) -> list[Handler]:
+async def register_handlers(self) -> RegisterHandlerResult:
     # Perform async operations here if needed
     logger.info("Performing async initialization")
     await some_async_operation()
-    return [MessageHandler(self.ping, filters.command("ping", prefixes=self.prefixes) & filters.me)]
+    return RegisterHandlerResult(
+        handlers=[
+            MessageHandler(self.ping, filters.command("ping", prefixes=self.prefixes) & filters.me),
+        ],
+    )
 ```
 
 The plugin loader will automatically detect whether `register_handlers` is sync or async and handle

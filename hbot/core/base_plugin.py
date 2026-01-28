@@ -1,6 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Awaitable
+from dataclasses import dataclass
 from typing import final
 
 from jsondb.database import JsonDB
@@ -10,6 +11,12 @@ from pyrogram.handlers.handler import Handler
 from hbot import PERSIST_DIR
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class RegisterHandlerResult:
+    handlers: list[Handler]
+    group: int = 0
 
 
 class BasePlugin(ABC):
@@ -61,7 +68,7 @@ class BasePlugin(ABC):
         config.close()
 
     @abstractmethod
-    def register_handlers(self) -> list[Handler] | Awaitable[list[Handler]]:
+    def register_handlers(self) -> RegisterHandlerResult | Awaitable[RegisterHandlerResult]:
         """This is the abstract method that must be implemented by subclasses for the bot to work.
 
         The plugin loader will call this method. The default implementation will raise

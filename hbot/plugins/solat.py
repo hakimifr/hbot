@@ -11,12 +11,11 @@ from jsondb.database import JsonDB
 from pyrogram import filters
 from pyrogram.client import Client
 from pyrogram.enums import ParseMode
-from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
 from hbot import PERSIST_DIR
-from hbot.core.base_plugin import BasePlugin
+from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
 
 logger = logging.getLogger(__name__)
 db: JsonDB = JsonDB(__name__, PERSIST_DIR)
@@ -177,14 +176,16 @@ class SolatPlugin(BasePlugin):
             await message.delete()
 
     @override
-    def register_handlers(self) -> list[Handler]:
-        return [
-            MessageHandler(
-                self.waktu_solat,
-                filters.command(["waktusolat", "waktu_solat", "ws"], prefixes=self.prefixes) & filters.me,
-            ),
-            MessageHandler(
-                self.get_zones,
-                filters.command("getzones", prefixes=self.prefixes) & filters.me,
-            ),
-        ]
+    def register_handlers(self) -> RegisterHandlerResult:
+        return RegisterHandlerResult(
+            handlers=[
+                MessageHandler(
+                    self.waktu_solat,
+                    filters.command(["waktusolat", "waktu_solat", "ws"], prefixes=self.prefixes) & filters.me,
+                ),
+                MessageHandler(
+                    self.get_zones,
+                    filters.command("getzones", prefixes=self.prefixes) & filters.me,
+                ),
+            ]
+        )

@@ -4,12 +4,13 @@ import logging
 from collections.abc import Iterable
 from os import PathLike
 from pathlib import Path
+from typing import cast
 
 from pyrogram.client import Client
 from pyrogram.handlers.handler import Handler
 
 from hbot import PLUGINS_DIR
-from hbot.core.base_plugin import BasePlugin
+from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
 
 logger = logging.getLogger(__name__)
 
@@ -65,17 +66,21 @@ async def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -
                 # Check if the result is a coroutine and handle accordingly
                 if inspect.iscoroutine(handlers_or_coro):
                     logger.info("register_handlers is async for plugin '%s', awaiting it", attr.name)
-                    handlers: list[Handler] = await handlers_or_coro  # type: ignore
+                    reg_handlers_result: RegisterHandlerResult = cast(RegisterHandlerResult, await handlers_or_coro)
                 else:
                     logger.info("register_handlers is sync for plugin '%s'", attr.name)
-                    handlers: list[Handler] = handlers_or_coro  # type: ignore
+                    reg_handlers_result: RegisterHandlerResult = cast(RegisterHandlerResult, handlers_or_coro)
+
+                handlers = reg_handlers_result.handlers
 
                 if not isinstance(handlers, list):
-                    raise ValueError("method register_handlers MUST return list[Handler]!")
+                    raise ValueError(
+                        "method register_handlers MUST return RegisterHandlerResult.handlers with type list[Handler]!"
+                    )
 
                 logger.info("registering %d handler(s) for plugin '%s'", len(handlers), attr.name)
                 for h in handlers:
-                    app.add_handler(h)
+                    app.add_handler(h, group=reg_handlers_result.group)
 
                 loaded.update({plugin_instance: handlers})
 

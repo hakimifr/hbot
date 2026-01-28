@@ -4,12 +4,11 @@ from typing import cast, override
 
 from pyrogram import filters
 from pyrogram.client import Client
-from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types import Chat
 from pyrogram.types.messages_and_media import Message
 
-from hbot.core.base_plugin import BasePlugin
+from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
 
 logger = logging.getLogger(__name__)
 
@@ -249,14 +248,16 @@ class ModPlugin(BasePlugin):
         await message.delete()
 
     @override
-    def register_handlers(self) -> list[Handler]:
+    def register_handlers(self) -> RegisterHandlerResult:
         base = filters.me
-        return [
-            MessageHandler(self.purge, filters.command("purge", prefixes=self.prefixes) & base),
-            MessageHandler(self.ban, filters.command("ban", prefixes=self.prefixes) & base),
-            MessageHandler(self.unban, filters.command("unban", prefixes=self.prefixes) & base),
-            MessageHandler(self.kick, filters.command("kick", prefixes=self.prefixes) & base),
-            MessageHandler(self.add, filters.command("add", prefixes=self.prefixes) & base),
-            MessageHandler(self.id, filters.command("id", prefixes=self.prefixes) & base),
-            MessageHandler(self.info, filters.command("info", prefixes=self.prefixes) & base),
-        ]
+        return RegisterHandlerResult(
+            handlers=[
+                MessageHandler(self.purge, filters.command("purge", prefixes=self.prefixes) & base),
+                MessageHandler(self.ban, filters.command("ban", prefixes=self.prefixes) & base),
+                MessageHandler(self.unban, filters.command("unban", prefixes=self.prefixes) & base),
+                MessageHandler(self.kick, filters.command("kick", prefixes=self.prefixes) & base),
+                MessageHandler(self.add, filters.command("add", prefixes=self.prefixes) & base),
+                MessageHandler(self.id, filters.command("id", prefixes=self.prefixes) & base),
+                MessageHandler(self.info, filters.command("info", prefixes=self.prefixes) & base),
+            ]
+        )

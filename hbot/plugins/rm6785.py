@@ -13,13 +13,12 @@ from jsondb.database import JsonDB
 from pyrogram import filters
 from pyrogram.client import Client
 from pyrogram.enums import MessageEntityType
-from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types import Chat, MessageEntity, User
 from pyrogram.types.messages_and_media import Message
 
 from hbot import PERSIST_DIR
-from hbot.core.base_plugin import BasePlugin
+from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
 
 # ruff: disable[E221]
 # fmt: off
@@ -871,47 +870,50 @@ class RM6785Plugin(BasePlugin):
         await self.lint(app, reply)
 
     @override
-    def register_handlers(self) -> list[Handler]:
+    def register_handlers(self) -> RegisterHandlerResult:
         asyncio.get_running_loop().create_task(PostUtils._on_start(self.app))
-        return [
-            MessageHandler(
-                self.auth,
-                filters.command("auth", prefixes=self.prefixes),
-            ),
-            MessageHandler(
-                self.deauth,
-                filters.command("deauth", prefixes=self.prefixes),
-            ),
-            MessageHandler(
-                self.lint,
-                filters.command("lint", prefixes=self.prefixes),
-            ),
-            MessageHandler(
-                self.vote,
-                filters.command(["approve", "1"], prefixes=[*self.prefixes, "+"]),
-            ),
-            MessageHandler(
-                self.remove_vote,
-                filters.command(["disapprove", "1"], prefixes=[*self.prefixes, "-"]),
-            ),
-            MessageHandler(
-                self.post,
-                filters.command("post", prefixes=self.prefixes),
-            ),
-            MessageHandler(
-                self.cancel,
-                filters.command("cancel", prefixes=self.prefixes),
-            ),
-            MessageHandler(
-                self.lsauth,
-                filters.command("lsauth", prefixes=self.prefixes),
-            ),
-            MessageHandler(
-                self.testmode,
-                filters.command("testmode", prefixes=self.prefixes),
-            ),
-            MessageHandler(
-                self.post_autodetector,
-                filters.caption,
-            ),
-        ]
+        return RegisterHandlerResult(
+            group=2,
+            handlers=[
+                MessageHandler(
+                    self.auth,
+                    filters.command("auth", prefixes=self.prefixes),
+                ),
+                MessageHandler(
+                    self.deauth,
+                    filters.command("deauth", prefixes=self.prefixes),
+                ),
+                MessageHandler(
+                    self.lint,
+                    filters.command("lint", prefixes=self.prefixes),
+                ),
+                MessageHandler(
+                    self.vote,
+                    filters.command(["approve", "1"], prefixes=[*self.prefixes, "+"]),
+                ),
+                MessageHandler(
+                    self.remove_vote,
+                    filters.command(["disapprove", "1"], prefixes=[*self.prefixes, "-"]),
+                ),
+                MessageHandler(
+                    self.post,
+                    filters.command("post", prefixes=self.prefixes),
+                ),
+                MessageHandler(
+                    self.cancel,
+                    filters.command("cancel", prefixes=self.prefixes),
+                ),
+                MessageHandler(
+                    self.lsauth,
+                    filters.command("lsauth", prefixes=self.prefixes),
+                ),
+                MessageHandler(
+                    self.testmode,
+                    filters.command("testmode", prefixes=self.prefixes),
+                ),
+                MessageHandler(
+                    self.post_autodetector,
+                    filters.caption,
+                ),
+            ],
+        )

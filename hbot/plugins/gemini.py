@@ -1,17 +1,18 @@
+import inspect
 import logging
 import os
 from tempfile import NamedTemporaryFile
-from typing import override
+from types import FrameType
+from typing import cast, override
 
 from google import genai
 from google.genai import types
 from pyrogram import filters
 from pyrogram.client import Client
-from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types import Message
 
-from hbot.core.base_plugin import BasePlugin
+from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,19 @@ class Gemini(BasePlugin):
 
     def __init__(self, app: Client) -> None:
         self.app: Client = app
+
+    async def _respond(self, app: Client, message: Message, text: str, edit: bool = False) -> Message:
+        current_frame = inspect.currentframe()
+        assert current_frame, "could not get current frame"
+        frame = cast(FrameType, current_frame.f_back)
+
+        fn_name = frame.f_code.co_name
+        line_no = frame.f_lineno
+
+        if edit:
+            return await message.edit_text(f"__[{fn_name}:{line_no}] {text}__")
+
+        return await message.reply_text(f"__[{fn_name}:{line_no}] {text}__")
 
     async def search_handler(self, client: Client, message: Message) -> None:
         if os.getenv(key="GEMINI_API_KEY") is None:
@@ -68,5 +82,13 @@ class Gemini(BasePlugin):
         return response.text
 
     @override
-    def register_handlers(self) -> list[Handler]:
-        return [MessageHandler(self.search_handler, filters.command("ask", prefixes=self.prefixes) & filters.me)]
+    def register_handlers(self) -> RegisterHandlerResult:
+        return RegisterHandlerResult(
+            group=1,
+            handlers=[
+                MessageHandler(
+                    self.search_handler,
+                    filters.command("ask", prefixes=self.prefixes) & filters.me,
+                ),
+            ],
+        )

@@ -9,12 +9,11 @@ from zipfile import ZipFile, is_zipfile
 from anyio import NamedTemporaryFile, Path, TemporaryDirectory
 from pyrogram import filters
 from pyrogram.client import Client
-from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types import Document
 from pyrogram.types.messages_and_media import Message
 
-from hbot.core.base_plugin import BasePlugin
+from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
 
 logger = logging.getLogger(__name__)
 
@@ -335,22 +334,24 @@ class MyPlugin(BasePlugin):
                 await message.edit_text(f"__error listing tar: {e}__")
 
     @override
-    def register_handlers(self) -> list[Handler]:
-        return [
-            MessageHandler(
-                self.unzip,
-                filters.command("unzip", prefixes=self.prefixes) & filters.me,
-            ),
-            MessageHandler(
-                self.unzipl,
-                filters.command("unzipl", prefixes=self.prefixes) & filters.me,
-            ),
-            MessageHandler(
-                self.untar,
-                filters.command("untar", prefixes=self.prefixes) & filters.me,
-            ),
-            MessageHandler(
-                self.untarl,
-                filters.command("untarl", prefixes=self.prefixes) & filters.me,
-            ),
-        ]
+    def register_handlers(self) -> RegisterHandlerResult:
+        return RegisterHandlerResult(
+            handlers=[
+                MessageHandler(
+                    self.unzip,
+                    filters.command("unzip", prefixes=self.prefixes) & filters.me,
+                ),
+                MessageHandler(
+                    self.unzipl,
+                    filters.command("unzipl", prefixes=self.prefixes) & filters.me,
+                ),
+                MessageHandler(
+                    self.untar,
+                    filters.command("untar", prefixes=self.prefixes) & filters.me,
+                ),
+                MessageHandler(
+                    self.untarl,
+                    filters.command("untarl", prefixes=self.prefixes) & filters.me,
+                ),
+            ]
+        )

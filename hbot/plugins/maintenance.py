@@ -16,12 +16,11 @@ from anyio import NamedTemporaryFile, Path
 from jsondb.database import JsonDB
 from pyrogram import filters
 from pyrogram.client import Client
-from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
 from hbot import PERSIST_DIR
-from hbot.core.base_plugin import BasePlugin
+from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
 
 logger = logging.getLogger(__name__)
 db = JsonDB(__name__, PERSIST_DIR)
@@ -356,7 +355,7 @@ class MaintenancePlugin(BasePlugin):
         await message.edit_text(f"done. {ram_usage_before_mb=}, {ram_usage_after_mb=}, {collected=}")
 
     @override
-    def register_handlers(self) -> list[Handler]:
+    def register_handlers(self) -> RegisterHandlerResult:
         end_time = time.time()
         db.read_database()
 
@@ -409,29 +408,31 @@ class MaintenancePlugin(BasePlugin):
             db.data["git_diff"] = ""
             db.data["restart"] = False
 
-        return [
-            MessageHandler(
-                self.update,
-                filters.command("update", prefixes=self.prefixes) & filters.me,
-            ),
-            MessageHandler(
-                self.restart,
-                filters.command("restart", prefixes=self.prefixes) & filters.me,
-            ),
-            MessageHandler(
-                self.shell,
-                filters.command("shell", prefixes=self.prefixes) & filters.me,
-            ),
-            MessageHandler(
-                self.getlog,
-                filters.command("getlog", prefixes=self.prefixes) & filters.me,
-            ),
-            MessageHandler(
-                self.dellog,
-                filters.command("dellog", prefixes=self.prefixes) & filters.me,
-            ),
-            MessageHandler(
-                self.triggergc,
-                filters.command("triggergc", prefixes=self.prefixes) & filters.me,
-            ),
-        ]
+        return RegisterHandlerResult(
+            handlers=[
+                MessageHandler(
+                    self.update,
+                    filters.command("update", prefixes=self.prefixes) & filters.me,
+                ),
+                MessageHandler(
+                    self.restart,
+                    filters.command("restart", prefixes=self.prefixes) & filters.me,
+                ),
+                MessageHandler(
+                    self.shell,
+                    filters.command("shell", prefixes=self.prefixes) & filters.me,
+                ),
+                MessageHandler(
+                    self.getlog,
+                    filters.command("getlog", prefixes=self.prefixes) & filters.me,
+                ),
+                MessageHandler(
+                    self.dellog,
+                    filters.command("dellog", prefixes=self.prefixes) & filters.me,
+                ),
+                MessageHandler(
+                    self.triggergc,
+                    filters.command("triggergc", prefixes=self.prefixes) & filters.me,
+                ),
+            ]
+        )
