@@ -15,6 +15,25 @@ logger = logging.getLogger(__name__)
 
 
 async def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -> dict[BasePlugin, list[Handler]]:
+    """This function loads every plugin under hbot/plugins/* (:ref:`PLUGINS_DIR`) directory.
+
+    Note that this loader will look for classes that inherits the :ref:`BasePlugin` abstract class,
+    and calls the :py:meth:`hbot.core.base_plugin.BasePlugin.register_handlers` method.
+
+    Args:
+        app: The :ref:`Client` instance of pyrogram.
+        plugins_dir: :ref:`PathLike` object of the directory containing plugins to load.
+            Defaults to :py:attr:`hbot.PLUGINS_DIR`.
+
+    Returns:
+        A dictionary where the instance of the subclass of :ref:`BasePlugin` is the key, and the
+        list of the handlers returned by the :py:meth:`hbot.core.base_plugin.BasePlugin.register_handlers`
+        method is the value.
+
+    Raises:
+        ValueError: When the :py:meth:`hbot.core.base_plugin.BasePlugin.register_handlers` method does not
+        return list of handlers.
+    """
     loaded: dict[BasePlugin, list[Handler]] = {}
     plugins: Iterable[PathLike] = Path(plugins_dir).resolve().glob("*.py")
 

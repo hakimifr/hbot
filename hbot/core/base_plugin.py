@@ -13,6 +13,20 @@ logger = logging.getLogger(__name__)
 
 
 class BasePlugin(ABC):
+    """The core to every plugins in this bot.
+
+    When :py:meth:`load_plugins()` is called to load plugins, it finds plugin in the plugins/ directory,
+    and calls the :py:meth:`register_handler()` method in any class that inherit this class. If you do
+    not inherit this class, the loader will assume it as an ordinary class that should not be
+    touched. :py:meth:`issubclass()` is used to determine if a class inherits this class.
+
+    Attributes:
+        name: (class attribute) The name of the plugin.
+        description: (class attribute) The description of the attribute.
+        config: (class attribute) The jsondb config attached, this is used to store global prefixes.
+        app: The app (pyrogram ``Client``) instance.
+    """
+
     name: str = "Base Plugin"
     description: str = "Not supposed to be instantiated."
 
@@ -37,6 +51,7 @@ class BasePlugin(ABC):
     # TODO: add option to reload all modules and/or restart the bot
     @final
     def change_global_prefix(self, prefixes: list[str]) -> None:
+        """This method is used to change the global prefixes for commands of the bot."""
         logger.info("changing global prefixes for bot to %s", prefixes)
         config = JsonDB(__name__, PERSIST_DIR)
 
@@ -48,4 +63,12 @@ class BasePlugin(ABC):
 
     @abstractmethod
     def register_handlers(self) -> list[Handler] | Awaitable[list[Handler]]:
+        """This is the abstract method that must be implemented by subclasses for the bot to work.
+
+        The plugin loader will call this method. The default implementation will raise
+        NotImplementedError exception.
+
+        Raises:
+            NotImplementedError: This is abstract method. Please provide your own implementation.
+        """
         raise NotImplementedError("a plugin must implement this method")

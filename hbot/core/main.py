@@ -29,6 +29,7 @@ async def get_loaded_plugins() -> dict[BasePlugin, list[Handler]]:
 
 
 async def main() -> None:
+    """Entry point of the bot."""
     global loaded_plugins
     app = Client("hbot", api_id, api_hash)
 

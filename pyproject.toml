@@ -17,6 +17,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "pydata-sphinx-theme>=0.16.1",
     "ruff>=0.14.10",
+    "sphinx>=9.1.0",
     "ty>=0.0.9",
 ]

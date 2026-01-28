@@ -49,3 +49,4 @@ Usage Instruction
    :caption: Contents:
 
    Working with plugins <plugins>
+   Api Documentation <modules>
