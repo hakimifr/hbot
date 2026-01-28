@@ -1,4 +1,5 @@
 import logging
+from abc import ABC, abstractmethod
 from collections.abc import Awaitable
 from typing import final
 
@@ -11,12 +12,12 @@ from hbot import PERSIST_DIR
 logger = logging.getLogger(__name__)
 
 
-class BasePlugin:
+class BasePlugin(ABC):
     name: str = "Base Plugin"
     description: str = "Not supposed to be instantiated."
 
-    # There is no need to change the prefixes in the subclasses. This way, consistency is maintained for every plugins.
-    # Unless there's a valid reason of doing so.
+    # There is no need to change the prefixes in the subclasses. This way, consistency is maintained
+    # for every plugins. Unless there's a valid reason of doing so.
     config = JsonDB(__name__, PERSIST_DIR)
 
     config.read_database()
@@ -28,6 +29,7 @@ class BasePlugin:
     # Allow other plugins to change the prefix
     config.close()
 
+    @final
     def __init__(self, app: Client) -> None:
         self.app: Client = app
 
@@ -44,5 +46,6 @@ class BasePlugin:
 
         config.close()
 
+    @abstractmethod
     def register_handlers(self) -> list[Handler] | Awaitable[list[Handler]]:
         raise NotImplementedError("a plugin must implement this method")
