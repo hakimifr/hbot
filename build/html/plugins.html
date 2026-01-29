@@ -299,11 +299,15 @@
                   
   <section id="working-with-the-plugin-system">
 <h1>Working With the Plugin System<a class="headerlink" href="#working-with-the-plugin-system" title="Link to this heading">#</a></h1>
+<p>The plugin system is so great, such that you can just delete all of my plugins under the
+hbot/plugins/* folder, put your own plugins there. The bot will work fine provided that you did not
+mess up the plugins, but if it ever crash, it is guaranteed to not be caused by the core of the bot,
+but rather your plugins.</p>
 <section id="how-does-the-plugin-system-work">
 <h2>How does the plugin system work?<a class="headerlink" href="#how-does-the-plugin-system-work" title="Link to this heading">#</a></h2>
 <p>The plugin system is meant to be modular and simple enough for quick setup. Your custom module must
 have a class that inherit from <code class="docutils literal notranslate"><span class="pre">hbot.core.base_plugins.BasePlugin</span></code> (In other word, the class must be a subclass of
-<code class="docutils literal notranslate"><span class="pre">hbot.core.base_plugins.BasePlugin</span></code>). The class must also define a method called <code class="docutils literal notranslate"><span class="pre">register_handler(self)</span></code>, which can
+<code class="docutils literal notranslate"><span class="pre">hbot.core.base_plugins.BasePlugin</span></code>). The class must also define a method called <code class="docutils literal notranslate"><span class="pre">register_handlers(self)</span></code>, which can
 either be a normal method, or async method. The loader is capable of calling async version properly.</p>
 <p>With this approach, you are free to have as many class as you want in your plugin, as the loader
 will only look for the class that inherit <code class="docutils literal notranslate"><span class="pre">hbot.core.base_plugins.BasePlugin</span></code>.</p>
@@ -320,7 +324,7 @@ will only look for the class that inherit <code class="docutils literal notransl
 <span class="kn">from</span><span class="w"> </span><span class="nn">pyrogram.handlers.message_handler</span><span class="w"> </span><span class="kn">import</span> <span class="n">MessageHandler</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pyrogram.types.messages_and_media</span><span class="w"> </span><span class="kn">import</span> <span class="n">Message</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">hbot.base_plugin</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasePlugin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hbot.base_plugin</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasePlugin</span><span class="p">,</span> <span class="n">RegisterHandlerResult</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -337,13 +341,18 @@ will only look for the class that inherit <code class="docutils literal notransl
         <span class="k">await</span> <span class="n">message</span><span class="o">.</span><span class="n">edit_text</span><span class="p">(</span><span class="s2">&quot;Pong!&quot;</span><span class="p">)</span>
 
     <span class="nd">@override</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">register_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Handler</span><span class="p">]:</span>  <span class="c1"># Note that this can be async if desired</span>
-        <span class="k">return</span> <span class="p">[</span>
-            <span class="n">MessageHandler</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">ping</span><span class="p">,</span>
-                <span class="n">filters</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">&quot;ping&quot;</span><span class="p">,</span> <span class="n">prefixes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prefixes</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">filters</span><span class="o">.</span><span class="n">me</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="p">]</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_handlers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegisterHandlerResult</span><span class="p">:</span>  <span class="c1"># Note that this can be async if desired</span>
+        <span class="k">return</span> <span class="n">RegisterHandlerResult</span><span class="p">(</span>
+            <span class="c1"># This group set to 0 by default, you don&#39;t really need to specify this unless you</span>
+            <span class="c1"># have an advanced use case that requires a different value for this</span>
+            <span class="n">group</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">handlers</span><span class="o">=</span><span class="p">[</span>
+                <span class="n">MessageHandler</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">ping</span><span class="p">,</span>
+                    <span class="n">filters</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">&quot;ping&quot;</span><span class="p">,</span> <span class="n">prefixes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prefixes</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">filters</span><span class="o">.</span><span class="n">me</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">],</span>
+        <span class="p">)</span>
 </pre></div>
 </div>
 <p>It may look intimidating at first, but if you remove the type annotations and the import for it,
