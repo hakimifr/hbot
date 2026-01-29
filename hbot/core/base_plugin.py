@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class RegisterHandlerResult:
+    """The dataclass that your plugin's :ref:`register_handlers()` method must return."""
+
     handlers: list[Handler]
     group: int = 0
 

@@ -10,7 +10,7 @@ hbot documentation
    bot, otherwise I won't reply.
 
 .. _contact me: https//t.me/hakimifr
-.. _the plugins section: /plugins
+.. _the plugins section: plugins
 
 Usage Instruction
 =================
