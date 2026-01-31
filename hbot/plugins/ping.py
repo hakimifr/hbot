@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class PingPlugin(BasePlugin):
-    name: str = "Unnamed Plugin"
-    description: str = "No description"
+    name: str = "Ping Plugin"
+    description: str = "Just a simple .ping command to check if the bot is alive."
 
     def __init__(self, app: Client) -> None:
         self.app: Client = app
