@@ -5,7 +5,7 @@ hbot
    If you ever plan on working with this codebase:
 
    #. Make sure `ruff`_ and `uv`_ is installed
-   #. Before commiting, make sure to run ``ruff check --fix && ruff format``
+   #. Before commiting, make sure to run ``make lint`` (this will run the codebase through ruff)
 
    .. _ruff: https://astral.sh/ruff
    .. _uv: https://astral.sh/uv
@@ -47,6 +47,13 @@ Once you meet the prerequisites above, you can run the bot with uv_:
 
    uv sync --frozen
    uv run python3 -m hbot
+
+
+For convenience, you can run the bot using the ``Makefile`` provided:
+
+.. code-block:: sh
+
+   make run
 
 Hosting
 =======
