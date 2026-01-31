@@ -120,7 +120,7 @@ class Gemini(BasePlugin):
             logger.info("chat %s id=%d in blacklist, skipping", chat.full_name, chat.id)
             return
 
-        if len(text.split(" ")) <= 4:
+        if len(text.split(" ")) <= 10:
             logger.info("message too short, skipping [user id=%d, name=%s]: '%s'", user.id, user.full_name, text)
             return
 
