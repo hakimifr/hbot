@@ -18,6 +18,9 @@ from pyrogram.types import Chat, Message, User
 from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
 
 logger = logging.getLogger(__name__)
+FRAUD_BLACKLIST_CHATS: list[int] = [
+    -1003101369520,  # bitcoin
+]
 BASE_PROMPT = """\
 You are an advanced fraud detection AI. Analyze user messages (text, emails, or chats) for
 financial, cryptocurrency, or other fraudulent activity based on these indicators:
@@ -112,6 +115,10 @@ class Gemini(BasePlugin):
         user = cast(User, message.from_user)
         chat = cast(Chat, message.chat)
         text = cast(str, message.text)
+
+        if chat.id in FRAUD_BLACKLIST_CHATS:
+            logger.info("chat %s id=%d in blacklist, skipping", chat.full_name, chat.id)
+            return
 
         if len(text.split(" ")) <= 4:
             logger.info("message too short, skipping [user id=%d, name=%s]: '%s'", user.id, user.full_name, text)
