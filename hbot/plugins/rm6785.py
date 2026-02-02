@@ -18,7 +18,7 @@ from pyrogram.types import Chat, MessageEntity, User
 from pyrogram.types.messages_and_media import Message
 
 from hbot import PERSIST_DIR
-from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
+from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 
 # ruff: disable[E221]
 # fmt: off
@@ -870,9 +870,9 @@ class RM6785Plugin(BasePlugin):
         await self.lint(app, reply)
 
     @override
-    def register_handlers(self) -> RegisterHandlerResult:
+    def register_handlers(self) -> RegisterHandlersResult:
         asyncio.get_running_loop().create_task(PostUtils._on_start(self.app))
-        return RegisterHandlerResult(
+        return RegisterHandlersResult(
             group=2,
             handlers=[
                 MessageHandler(

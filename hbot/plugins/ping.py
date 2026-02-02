@@ -6,7 +6,7 @@ from pyrogram.client import Client
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
-from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
+from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +23,8 @@ class PingPlugin(BasePlugin):
         await message.edit_text("Pong!")
 
     @override
-    def register_handlers(self) -> RegisterHandlerResult:
-        return RegisterHandlerResult(
+    def register_handlers(self) -> RegisterHandlersResult:
+        return RegisterHandlersResult(
             handlers=[
                 MessageHandler(
                     self.ping,

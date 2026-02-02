@@ -7,7 +7,7 @@ from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
-from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
+from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 from hbot.core.main import get_loaded_plugins
 
 logger = logging.getLogger(__name__)
@@ -60,8 +60,8 @@ class MyPlugin(BasePlugin):
         await message.edit_text(help_string)
 
     @override
-    def register_handlers(self) -> RegisterHandlerResult:
-        return RegisterHandlerResult(
+    def register_handlers(self) -> RegisterHandlersResult:
+        return RegisterHandlersResult(
             handlers=[
                 MessageHandler(
                     self.help,

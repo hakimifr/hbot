@@ -10,7 +10,7 @@ from pyrogram.client import Client
 from pyrogram.handlers.handler import Handler
 
 from hbot import PLUGINS_DIR
-from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
+from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 
 logger = logging.getLogger(__name__)
 
@@ -66,10 +66,10 @@ async def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -
                 # Check if the result is a coroutine and handle accordingly
                 if inspect.iscoroutine(handlers_or_coro):
                     logger.info("register_handlers is async for plugin '%s', awaiting it", attr.name)
-                    reg_handlers_result: RegisterHandlerResult = cast(RegisterHandlerResult, await handlers_or_coro)
+                    reg_handlers_result: RegisterHandlersResult = cast(RegisterHandlersResult, await handlers_or_coro)
                 else:
                     logger.info("register_handlers is sync for plugin '%s'", attr.name)
-                    reg_handlers_result: RegisterHandlerResult = cast(RegisterHandlerResult, handlers_or_coro)
+                    reg_handlers_result: RegisterHandlersResult = cast(RegisterHandlersResult, handlers_or_coro)
 
                 handlers = reg_handlers_result.handlers
 

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class RegisterHandlerResult:
+class RegisterHandlersResult:
     """The dataclass that your plugin's :ref:`register_handlers()` method must return."""
 
     handlers: list[Handler]
@@ -70,7 +70,7 @@ class BasePlugin(ABC):
         config.close()
 
     @abstractmethod
-    def register_handlers(self) -> RegisterHandlerResult | Awaitable[RegisterHandlerResult]:
+    def register_handlers(self) -> RegisterHandlersResult | Awaitable[RegisterHandlersResult]:
         """This is the abstract method that must be implemented by subclasses for the bot to work.
 
         The plugin loader will call this method. The default implementation will raise

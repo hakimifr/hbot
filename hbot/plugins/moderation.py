@@ -8,7 +8,7 @@ from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types import Chat
 from pyrogram.types.messages_and_media import Message
 
-from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
+from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 
 logger = logging.getLogger(__name__)
 
@@ -248,9 +248,9 @@ class ModPlugin(BasePlugin):
         await message.delete()
 
     @override
-    def register_handlers(self) -> RegisterHandlerResult:
+    def register_handlers(self) -> RegisterHandlersResult:
         base = filters.me
-        return RegisterHandlerResult(
+        return RegisterHandlersResult(
             handlers=[
                 MessageHandler(self.purge, filters.command("purge", prefixes=self.prefixes) & base),
                 MessageHandler(self.ban, filters.command("ban", prefixes=self.prefixes) & base),

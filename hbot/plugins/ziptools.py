@@ -13,7 +13,7 @@ from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types import Document
 from pyrogram.types.messages_and_media import Message
 
-from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
+from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 
 logger = logging.getLogger(__name__)
 
@@ -334,8 +334,8 @@ class MyPlugin(BasePlugin):
                 await message.edit_text(f"__error listing tar: {e}__")
 
     @override
-    def register_handlers(self) -> RegisterHandlerResult:
-        return RegisterHandlerResult(
+    def register_handlers(self) -> RegisterHandlersResult:
+        return RegisterHandlersResult(
             handlers=[
                 MessageHandler(
                     self.unzip,

@@ -15,7 +15,7 @@ from pyrogram.enums import ChatMemberStatus
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types import Chat, Message, User
 
-from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
+from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 
 logger = logging.getLogger(__name__)
 FRAUD_BLACKLIST_CHATS: list[int] = [
@@ -165,8 +165,8 @@ class Gemini(BasePlugin):
         )
 
     @override
-    def register_handlers(self) -> RegisterHandlerResult:
-        return RegisterHandlerResult(
+    def register_handlers(self) -> RegisterHandlersResult:
+        return RegisterHandlersResult(
             group=1,
             handlers=[
                 MessageHandler(

@@ -20,7 +20,7 @@ from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
 from hbot import PERSIST_DIR
-from hbot.core.base_plugin import BasePlugin, RegisterHandlerResult
+from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 
 logger = logging.getLogger(__name__)
 db = JsonDB(__name__, PERSIST_DIR)
@@ -355,7 +355,7 @@ class MaintenancePlugin(BasePlugin):
         await message.edit_text(f"done. {ram_usage_before_mb=}, {ram_usage_after_mb=}, {collected=}")
 
     @override
-    def register_handlers(self) -> RegisterHandlerResult:
+    def register_handlers(self) -> RegisterHandlersResult:
         end_time = time.time()
         db.read_database()
 
@@ -408,7 +408,7 @@ class MaintenancePlugin(BasePlugin):
             db.data["git_diff"] = ""
             db.data["restart"] = False
 
-        return RegisterHandlerResult(
+        return RegisterHandlersResult(
             handlers=[
                 MessageHandler(
                     self.update,
