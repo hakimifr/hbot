@@ -4,8 +4,9 @@ from typing import cast, override
 
 from pyrogram import filters
 from pyrogram.client import Client
+from pyrogram.errors import FloodWait
 from pyrogram.handlers.message_handler import MessageHandler
-from pyrogram.types import Chat
+from pyrogram.types import Chat, ChatMember
 from pyrogram.types.messages_and_media import Message
 
 from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
@@ -247,6 +248,46 @@ class ModPlugin(BasePlugin):
         await asyncio.sleep(5)
         await message.delete()
 
+    async def deleted_users(self, app: Client, message: Message) -> None:
+        chat = cast(Chat, message.chat)
+
+        if not chat.is_admin:
+            await message.delete()
+            return
+
+        logger.info("removing deleted accounts")
+        await message.edit_text("__removing deleted accounts__")
+
+        deleted_members: list[ChatMember] = []
+        async for member in chat.get_members():
+            if member.user.is_deleted:
+                deleted_members.append(member)
+
+        if len(deleted_members) == 0:
+            await message.edit_text("__no deleted member(s) found__")
+            return
+
+        final_msg = "**Deleted Accounts Removal Status:**\n"
+        i = 0
+        while i < len(deleted_members):
+            member = deleted_members[i]
+            i += 1
+            try:
+                logger.info("remove: %d", member.user.id)
+                await chat.ban_member(member.user.id)
+                await chat.unban_member(member.user.id)
+                await asyncio.sleep(0.2)
+                final_msg += f"__removed: {member.user.id}__\n"
+            except FloodWait as e:
+                logger.warning("received floodwait: %d seconds", e.value)
+                await asyncio.sleep(e.value)  # type: ignore
+                i -= 1
+            except Exception as e:
+                logger.warning("cannot remove %d, reason: %s", member.user.id, str(e))
+                final_msg += f"__failed to remove: {member.user.id}, reason: {e}__\n"
+
+        await message.edit_text(final_msg)
+
     @override
     def register_handlers(self) -> RegisterHandlersResult:
         base = filters.me
@@ -259,5 +300,6 @@ class ModPlugin(BasePlugin):
                 MessageHandler(self.add, filters.command("add", prefixes=self.prefixes) & base),
                 MessageHandler(self.id, filters.command("id", prefixes=self.prefixes) & base),
                 MessageHandler(self.info, filters.command("info", prefixes=self.prefixes) & base),
+                MessageHandler(self.deleted_users, filters.command("du", prefixes=self.prefixes) & base),
             ]
         )
