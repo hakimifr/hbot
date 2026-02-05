@@ -12,7 +12,7 @@ from typing import Any, assert_never, cast, override
 from jsondb.database import JsonDB
 from pyrogram import filters
 from pyrogram.client import Client
-from pyrogram.enums import MessageEntityType
+from pyrogram.enums import MessageEntityType, ParseMode
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types import Chat, MessageEntity, User
 from pyrogram.types.messages_and_media import Message
@@ -612,7 +612,7 @@ class PostUtils:
             await asyncio.sleep(2)
 
         if task.done():
-            await confirmation_message.edit_text("__posted__")
+            await confirmation_message.edit_text("__posted. need to delete? use /delete__")
 
     @classmethod
     async def cancel(cls, app: Client, reply_to_message: Message) -> PostCancelStatus:
@@ -640,7 +640,7 @@ class RM6785Plugin(BasePlugin):
     async def _respond(self, app: Client, message: Message, text: str) -> Message:
         user: User = cast(User, message.from_user)
         if user.id == (await app.get_me()).id:
-            await message.edit_text(text)
+            await message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
             return message
 
         reply_message = await message.reply_text(text)
@@ -869,6 +869,32 @@ class RM6785Plugin(BasePlugin):
         reply: Message = await message.reply_text("__post detected, linting__")
         await self.lint(app, reply)
 
+    async def delete(self, app: Client, message: Message) -> None:
+        assert message.text
+        args: list[str] = message.text.split(" ")
+
+        if len(args) < 2:
+            await self._respond(app, message, "__not enough arguments. usage: /delete <link 1> [link 2] ...__")
+            return
+
+        args.pop(0)
+        message_ids: list[int] = []
+
+        for link in args:
+            match = re.match(r"^https://t\.me/(?:[A-Za-z0-9_]+|\d+)/(\d+)$", link)
+            if not match:
+                await self._respond(app, message, f"invalid link: {link}")
+                continue
+
+            msg_id: int = int(match.group(1))
+            message_ids.append(msg_id)
+
+        try:
+            await app.delete_messages(RM6785_CHANNEL_ID.value, message_ids)
+            await self._respond(app, message, "__messages deleted__")
+        except Exception as e:
+            await self._respond(app, message, f"__one or more message failed to be deleted: {repr(e)}__")
+
     @override
     def register_handlers(self) -> RegisterHandlersResult:
         asyncio.get_running_loop().create_task(PostUtils._on_start(self.app))
@@ -915,5 +941,6 @@ class RM6785Plugin(BasePlugin):
                     self.post_autodetector,
                     filters.caption,
                 ),
+                MessageHandler(self.delete, filters.command("delete", prefixes=self.prefixes)),
             ],
         )
