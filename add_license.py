@@ -48,8 +48,15 @@ def add_license_header(file_path) -> bool:
         return True
 
 
-for file in Path(".").rglob("*.py"):
-    if Path(".venv") in file.parents or Path(".git") in file.parents:
-        continue
+def main() -> None:
+    hidden_dirs: set[Path] = set(Path(".").glob(".*"))
 
-    add_license_header(file) and print(f"-> Added license header to {file}")
+    for file in Path(".").rglob("*.py"):
+        if hidden_dirs.intersection(file.parents):
+            continue
+
+        add_license_header(file) and print(f"-> Added license header to {file}")
+
+
+if __name__ == "__main__":
+    main()
