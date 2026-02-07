@@ -36,6 +36,7 @@ from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 logger = logging.getLogger(__name__)
 FRAUD_BLACKLIST_CHATS: list[int] = [
     -1003101369520,  # bitcoin
+    -1002035721627,  # GP
 ]
 BASE_PROMPT = """\
 You are an advanced fraud detection AI. Analyze user messages (text, emails, or chats) for
