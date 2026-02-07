@@ -52,11 +52,19 @@ class MyPlugin(BasePlugin):
             else:
                 await message.edit_text(merged_lines)
 
+    async def clap(self, app: Client, message: Message) -> None:
+        assert message.reply_to_message
+        assert message.reply_to_message.text
+
+        text: str = message.reply_to_message.text.replace(" ", b"\xf0\x9f\x91\x8f".decode())
+        await message.edit_text(text)
+
     @override
     def register_handlers(self) -> RegisterHandlersResult:
         return RegisterHandlersResult(
             group=0,
             handlers=[
                 MessageHandler(self.unicode, filters.command("un", prefixes=self.prefixes) & filters.me),
+                MessageHandler(self.clap, filters.command("clap", prefixes=self.prefixes) & filters.me),
             ],
         )
