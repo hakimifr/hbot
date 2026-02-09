@@ -1,4 +1,5 @@
 import logging
+import random
 import unicodedata
 from typing import override
 
@@ -56,8 +57,20 @@ class MyPlugin(BasePlugin):
         assert message.reply_to_message
         assert message.reply_to_message.text
 
-        text: str = message.reply_to_message.text.replace(" ", b"\xf0\x9f\x91\x8f".decode())
-        await message.edit_text(text)
+        words: str = message.reply_to_message.text.replace(" ", b"\xf0\x9f\x91\x8f".decode())
+        await message.edit_text(words)
+
+    async def shuffle(self, app: Client, message: Message) -> None:
+        if not message.reply_to_message:
+            await message.edit_text("__please reply to a message__!")
+            return
+
+        assert message.reply_to_message.text
+        words: list[str] = message.reply_to_message.text.split(" ")
+        random.shuffle(words)
+
+        joint: str = " ".join(words)
+        await message.edit_text(joint)
 
     @override
     def register_handlers(self) -> RegisterHandlersResult:
@@ -66,5 +79,6 @@ class MyPlugin(BasePlugin):
             handlers=[
                 MessageHandler(self.unicode, filters.command("un", prefixes=self.prefixes) & filters.me),
                 MessageHandler(self.clap, filters.command("clap", prefixes=self.prefixes) & filters.me),
+                MessageHandler(self.shuffle, filters.command("shuf", prefixes=self.prefixes) & filters.me),
             ],
         )
