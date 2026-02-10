@@ -13,18 +13,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 # Copyright (c) 2026, Firdaus Hakimi <hakimifirdaus944@gmail.com>
-
 import inspect
 import logging
 import os
 import re
 from dataclasses import dataclass
-from tempfile import NamedTemporaryFile
 from types import FrameType
-from typing import cast, override
+from typing import Literal, cast, override
 
+from anyio import NamedTemporaryFile
 from google import genai
 from google.genai import types
+from google.genai.errors import ClientError
 from pyrogram import filters
 from pyrogram.client import Client
 from pyrogram.enums import ChatMemberStatus
@@ -64,6 +64,22 @@ class FraudCheckResult:
     confidence: int
 
 
+@dataclass(frozen=True)
+class GeminiOk:
+    response: str
+    ok: Literal[True] = True
+
+
+@dataclass(frozen=False)
+class GeminiErr:
+    exception: Exception
+    error: str
+    ok: Literal[False] = False
+
+
+GeminiResult = GeminiOk | GeminiErr
+
+
 class Gemini(BasePlugin):
     name: str = "Gemini Plugin"
     description: str = "Plugin for Gemini"
@@ -94,24 +110,22 @@ class Gemini(BasePlugin):
         if len(parts) > 1:
             prompt = parts[1]
             await message.edit("Asking..")
-            try:
-                # Call the async helper
-                response_text = await self.ask_gemini(prompt)
-                if len(response_text) > 4096:
-                    await message.edit_text("response too long, sending as file")
-                    with NamedTemporaryFile("w+", encoding="utf-8", suffix=".md") as f:
-                        f.write(response_text)
-                        f.flush()
-                        await message.reply_document(f.name)
-                else:
-                    await message.edit_text(response_text)
-            except TimeoutError as e:
-                logging.exception("Gemini Error:")
-                await message.edit(f"Error: {str(e)}")
-        else:
-            await message.edit("Please provide a search query!")
 
-    async def ask_gemini(self, text_to_be_ask) -> str:
+            response = await self.ask_gemini(prompt)
+            match response:
+                case GeminiOk(response=response_text):
+                    if len(response_text) > 4096:
+                        await message.edit_text("__response too long, sending as file__")
+                        async with NamedTemporaryFile("w+", encoding="utf-8", suffix=".md") as f:
+                            await f.write(response_text)
+                            await f.flush()
+                case GeminiErr(exception=resp_exc, error=err_msg):
+                    await message.edit_text(f"__error while generating response, see log for details: {err_msg}__")
+                    raise resp_exc
+        else:
+            await message.edit_text("__please provide a prompt!__")
+
+    async def ask_gemini(self, text_to_be_ask) -> GeminiResult:
         api_key = os.getenv(key="GEMINI_API_KEY")
         client = genai.Client(api_key=api_key)
         config = types.GenerateContentConfig(temperature=1.0)
@@ -122,11 +136,15 @@ class Gemini(BasePlugin):
             )
             if response.text is None:
                 raise
-        except Exception:
+        except ClientError as e:
+            # TODO: the response sometimes actually contain retryDelay, we should use that in the future
+            logger.exception("resource is exhausted, refer traceback:")
+            return GeminiErr(e, "resource is exhausted")
+        except Exception as e:
             logger.exception("error when generating response, traceback:")
-            return "error when generating response, see log for more info"
+            return GeminiErr(e, "error when generating rseponse, see exception provided/log")
 
-        return response.text
+        return GeminiOk(response.text)
 
     async def message_fraud_detector(self, app: Client, message: Message) -> None:
         user = cast(User, message.from_user)
@@ -144,42 +162,47 @@ class Gemini(BasePlugin):
         logger.info("checking message [userid=%d, fullname=%s]: '%s'", user.id, user.full_name, text)
 
         response = await self.ask_gemini(f"{BASE_PROMPT}{text}")
-        pattern = r"Fraud detected \(Yes/No\): (\w+)\s*Confidence rate: (\d+)%"
-        match = re.search(pattern, response)
+        match response:
+            case GeminiErr(exception=e, error=err_msg):
+                logger.error("failed to obtain fraud check result from gemini: %s", err_msg)
+                raise e
+            case GeminiOk(response=response_text):
+                pattern = r"Fraud detected \(Yes/No\): (\w+)\s*Confidence rate: (\d+)%"
+                match = re.search(pattern, response_text)
 
-        if not match:
-            logger.error("something went wrong with Gemini's response! response: %s", response)
-            return
+                if not match:
+                    logger.error("something went wrong with Gemini's response! response: %s", response_text)
+                    return
 
-        logger.info("Gemini's response: %s", response)
+                logger.info("Gemini's response: %s", response_text)
 
-        is_fraud: bool = match.group(1) == "Yes"
-        confidence: int = int(match.group(2))
+                is_fraud: bool = match.group(1) == "Yes"
+                confidence: int = int(match.group(2))
 
-        logger.info("is fraud?: %s", is_fraud)
-        logger.info("confidence: %d", confidence)
+                logger.info("is fraud?: %s", is_fraud)
+                logger.info("confidence: %d", confidence)
 
-        if not is_fraud or confidence < 75:
-            logger.info("no fraud detected")
-            return
+                if not is_fraud or confidence < 75:
+                    logger.info("no fraud detected")
+                    return
 
-        if (await chat.get_member(user.id)).status in {ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER}:
-            logger.info(
-                "IGNORE [userid=%d, fullname=%s] fraud detected but user is admin, ignoring",
-                user.id,
-                user.full_name,
-            )
-            return
+                if (await chat.get_member(user.id)).status in {ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER}:
+                    logger.info(
+                        "IGNORE [userid=%d, fullname=%s] fraud detected but user is admin, ignoring",
+                        user.id,
+                        user.full_name,
+                    )
+                    return
 
-        logger.info("BAN [userid=%d, fullname=%s] fraud detected")
-        msg = await self._respond(app, message, "fraud detected, banning user")
-        await chat.ban_member(user.id)
-        await self._respond(
-            app,
-            msg,
-            f"__banned [{user.full_name}](tg://user?id={user.id}), message contains fraud:__\n{message.text}",
-            edit=True,
-        )
+                logger.info("BAN [userid=%d, fullname=%s] fraud detected")
+                msg = await self._respond(app, message, "fraud detected, banning user")
+                await chat.ban_member(user.id)
+                await self._respond(
+                    app,
+                    msg,
+                    f"__banned [{user.full_name}](tg://user?id={user.id}), message contains fraud:__\n{message.text}",
+                    edit=True,
+                )
 
     @override
     def register_handlers(self) -> RegisterHandlersResult:
