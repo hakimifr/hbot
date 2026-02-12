@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 FRAUD_BLACKLIST_CHATS: list[int] = [
     -1003101369520,  # bitcoin
     -1002035721627,  # GP
+    -1001299514785,  # RM6785 testing group
 ]
 BASE_PROMPT = """\
 You are an advanced fraud detection AI. Analyze user messages (text, emails, or chats) for
