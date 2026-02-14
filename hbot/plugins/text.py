@@ -77,8 +77,8 @@ class MyPlugin(BasePlugin):
         return RegisterHandlersResult(
             group=0,
             handlers=[
-                MessageHandler(self.unicode, filters.command("un", prefixes=self.prefixes) & filters.me),
-                MessageHandler(self.clap, filters.command("clap", prefixes=self.prefixes) & filters.me),
-                MessageHandler(self.shuffle, filters.command("shuf", prefixes=self.prefixes) & filters.me),
+                MessageHandler(self.unicode, filters.command(["unicode", "un"], prefixes=self.prefixes) & filters.me),
+                MessageHandler(self.clap, filters.command(["clap", "cl"], prefixes=self.prefixes) & filters.me),
+                MessageHandler(self.shuffle, filters.command(["shuffle", "shuf"], prefixes=self.prefixes) & filters.me),
             ],
         )
