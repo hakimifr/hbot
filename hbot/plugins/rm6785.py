@@ -875,6 +875,7 @@ class RM6785Plugin(BasePlugin):
             case _:
                 assert_never(RM6785_CHANNEL_ID)
 
+    @run_only_whitelist()
     async def post_autodetector(self, app: Client, message: Message) -> None:
         assert message.caption and isinstance(message.caption, str)
         if "#ROM" not in message.caption and "#KERNEL" not in message.caption:
@@ -885,6 +886,7 @@ class RM6785Plugin(BasePlugin):
         reply: Message = await message.reply_text("__post detected, linting__")
         await self.lint(app, reply)
 
+    @run_only_whitelist()
     async def delete(self, app: Client, message: Message) -> None:
         assert message.text
         args: list[str] = message.text.split(" ")
