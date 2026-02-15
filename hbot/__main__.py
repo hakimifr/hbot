@@ -16,8 +16,11 @@
 
 import uvloop
 
-from hbot.core import coloured_logging_setup  # noqa: F401
+# from hbot.core import coloured_logging_setup  # noqa: F401
+from hbot.core.custom_logger import getLogger
 from hbot.core.main import main
 
 if __name__ == "__main__":
     uvloop.run(main())
+    getLogger().queue.put(None)
+    getLogger().thread.join()

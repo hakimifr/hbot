@@ -30,4 +30,6 @@ COPY --from=deps /app /app
 # copy source last
 COPY . .
 
+ENV UV_PYTHON=3.14t
+ENV PYTHON_GIL=0
 CMD ["uv", "run", "python", "-m", "hbot"]

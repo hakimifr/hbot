@@ -11,6 +11,7 @@ dependencies = [
     "httpx>=0.28.1",
     "jsondb-hakimifr>=0.3.0",
     "kurigram>=2.2.15",
+    "rich>=14.3.2",
     "tgcrypto>=1.2.5",
     "uvloop>=0.22.1",
 ]
