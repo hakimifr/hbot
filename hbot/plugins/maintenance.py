@@ -17,7 +17,6 @@
 import asyncio
 import atexit
 import gc
-import json
 import logging
 import os
 import resource
@@ -245,10 +244,7 @@ class MaintenancePlugin(BasePlugin):
 
         logger.info("log file exists")
 
-        async with (
-            await log_file.open("r", encoding="utf-8") as f,
-            NamedTemporaryFile("a+", suffix="_parsed.log", encoding="utf-8") as pf,
-        ):
+        async with await log_file.open("r", encoding="utf-8") as f:
             logger.info("open succeeds, reading log file")
 
             # Read all lines first if we need to apply head/tail
@@ -270,39 +266,9 @@ class MaintenancePlugin(BasePlugin):
                     await ff.flush()
                     logger.info("uploading filtered log file")
                     await message.reply_document(ff.wrapped.name)
-
-                # Process the filtered lines for parsing
-                lines_to_process = all_lines
             else:
                 logger.info("uploading full log file")
                 await message.reply_document(f.wrapped.name)
-                lines_to_process = await f.readlines()
-
-            logger.info("parsing JSON payload of log file into '%s'", pf.wrapped.name)
-            await message.edit_text("__parsing JSON payload of log file__")
-
-            for line in lines_to_process:
-                try:
-                    logger.disabled = True
-                    payload_raw: dict = json.loads(line)
-                    lp: LogJsonPayload = LogJsonPayload(**payload_raw)
-
-                    prefix: str = f"[{lp.ts}] {lp.level} <{lp.funcname}:{lp.lineno}> ({lp.logger}): "
-                    logmsg: str = f"{prefix}{lp.msg} {lp.exc}"
-                    final: str = logmsg.replace("\n", f"\n{prefix}")
-                    final: str = f"{final}\n"
-                    await pf.write(final)
-                except json.JSONDecodeError:
-                    logger.warning("malformed log line, skipping")
-                    continue
-                finally:
-                    logger.disabled = False
-
-            logger.info("flushing temp file '%s'", pf.wrapped.name)
-            await pf.flush()
-
-            logger.info("uploading parsed log file")
-            await message.reply_document(pf.wrapped.name)
 
         logger.info("finished")
         await message.edit_text("__done__")
