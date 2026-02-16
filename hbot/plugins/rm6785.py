@@ -13,7 +13,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 # Copyright (c) 2026, Firdaus Hakimi <hakimifirdaus944@gmail.com>
-
 import asyncio
 import atexit
 import logging
@@ -50,6 +49,8 @@ type PostConfirmationMessageId  = int
 type StickerChatId              = int
 type StickerMessageId           = int
 type StickerId                  = str
+type FeatureId                  = str
+type FeatureDescription         = str
 # fmt: on
 # ruff: enable[E221]
 
@@ -69,6 +70,9 @@ SUPERUSERS: dict[UserIdAuthDbKey, Name] = {
     "1024853832": "hakimi",
     "1138003186": "samar",
 }
+NEW_FEATURES: list[str] = [
+    "/delete is now implemented! usage: `/delete <link1> [link2] [link3] ... [linkN]`.",
+]
 
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -586,6 +590,24 @@ class PostUtils:
             )
             await app.delete_messages(p.sticker_chat_id, p.sticker_message_id)
             await cls.post(app, post_confirmation, source_post)
+
+        new_feature_db: JsonDB = JsonDB(f"{__name__}:features", PERSIST_DIR)
+        logger.info("checking for new features")
+
+        try:
+            existing_features: set[str] = set(new_feature_db.data.get("features", []))
+            new_features: set[str] = existing_features ^ set(NEW_FEATURES)
+
+            if not new_features:
+                return
+
+            text: str = f"[RM6785 Plugin] **New Feature(s):**\n - {'\n - '.join(new_features)}"
+            logger.info("\nnew features: %s\n", text)
+            await app.send_message(-1001299514785, text, parse_mode=ParseMode.MARKDOWN)
+            new_feature_db.data.update({"features": NEW_FEATURES})
+        finally:
+            new_feature_db.write_database()
+            new_feature_db.close()
 
     @staticmethod
     async def _run_delayed(reply_to_message: Message, delay_in_minutes: float = 5):
