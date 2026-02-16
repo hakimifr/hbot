@@ -15,6 +15,7 @@
 # Copyright (c) 2026, Firdaus Hakimi <hakimifirdaus944@gmail.com>
 import asyncio
 import atexit
+import contextlib
 import logging
 import re
 import time
@@ -72,6 +73,7 @@ SUPERUSERS: dict[UserIdAuthDbKey, Name] = {
 }
 NEW_FEATURES: list[str] = [
     "/delete is now implemented! usage: `/delete <link1> [link2] [link3] ... [linkN]`.",
+    "/post now accepts custom duration (in minutes). usage: `/post 69`, which will delay post by 69 minutes.",
 ]
 
 
@@ -618,12 +620,18 @@ class PostUtils:
             raise
 
     @classmethod
-    async def post(cls, app: Client, confirmation_message: Message, reply_to_message: Message) -> None:
+    async def post(
+        cls,
+        app: Client,
+        confirmation_message: Message,
+        reply_to_message: Message,
+        delay_in_minutes: float = 5,
+    ) -> None:
         msg = await app.send_sticker(RM6785_CHANNEL_ID.value, RM6785_STICKER_ID)
         msg = cast(Message, msg)
         chat = cast(Chat, msg.chat)
 
-        task = asyncio.create_task(cls._run_delayed(reply_to_message))
+        task = asyncio.create_task(cls._run_delayed(reply_to_message, delay_in_minutes=delay_in_minutes))
         cls.posts.append(
             PostData(
                 post_source_chat_id=cast(int, cast(Chat, reply_to_message.chat).id),
@@ -835,6 +843,21 @@ class RM6785Plugin(BasePlugin):
 
         reply_to_message = cast(Message, message.reply_to_message)
         vote_count = VoteUtils.get_vote_count(reply_to_message.id)
+        duration: float = 5
+
+        cmd_msg = message.text.strip().split(" ")
+        with contextlib.suppress(ValueError):
+            cmd_msg.remove("--force")
+        cmd_msg.pop(0)
+
+        if len(cmd_msg) > 0:
+            logger.info("received custom duration for post: %s", cmd_msg[0])
+            try:
+                duration = float(cmd_msg[0].removesuffix("m"))
+            except ValueError:
+                await message.edit_text(f"{cmd_msg[0]} is not a valid int/float")
+                logger.error("%s is not a valid int/float!", cmd_msg[0])
+                return
 
         if vote_count < 3 and "--force" not in message.text:
             await self._respond(app, message, "__not enough approvals__")
@@ -845,7 +868,14 @@ class RM6785Plugin(BasePlugin):
             return
 
         confirmation_message = await self._respond(app, message, "__please wait__")
-        asyncio.create_task(PostUtils.post(app, confirmation_message, message.reply_to_message))
+        asyncio.create_task(
+            PostUtils.post(
+                app,
+                confirmation_message,
+                message.reply_to_message,
+                delay_in_minutes=duration,
+            )
+        )
 
     @run_only_whitelist()
     async def cancel(self, app: Client, message: Message) -> None:
