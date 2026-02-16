@@ -70,11 +70,13 @@ TRIGGER_WHITELISTS: list[ChatId] = [
 SUPERUSERS: dict[UserIdAuthDbKey, Name] = {
     "1024853832": "hakimi",
     "1138003186": "samar",
+    "831939564": "debayan",
 }
 NEW_FEATURES: list[str] = [
     "/delete is now implemented! usage: `/delete <link1> [link2] [link3] ... [linkN]`.",
     "/post now accepts custom duration (in minutes). usage: `/post 69`, which will delay post by 69 minutes.",
     "A17 is now added as valid hashtag for linter",
+    "debayan has been added as superuser (can use /auth, /deauth, and /post with --force option)",
 ]
 
 
