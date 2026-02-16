@@ -74,6 +74,7 @@ SUPERUSERS: dict[UserIdAuthDbKey, Name] = {
 NEW_FEATURES: list[str] = [
     "/delete is now implemented! usage: `/delete <link1> [link2] [link3] ... [linkN]`.",
     "/post now accepts custom duration (in minutes). usage: `/post 69`, which will delay post by 69 minutes.",
+    "A17 is now added as valid hashtag for linter",
 ]
 
 
@@ -254,7 +255,7 @@ class LintUtils:
         RELEASE_TYPE = {"UNOFFICIAL", "OFFICIAL"}
         BUILD_TYPE = {"ROM", "KERNEL", "RECOVERY"}
         DEVICE = {"RM6785", "RMX2001", "RMX2151", "salaa", "nemo"}
-        ANDROID_VERSION = {"A10", "A11", "A12", "A13", "A14", "A15", "A16"}
+        ANDROID_VERSION = {"A10", "A11", "A12", "A13", "A14", "A15", "A16", "A17"}
         RUI_VERSION = {"RUI1", "RUI2", "RUI3"}
 
         if TAG_BUILD not in BUILD_TYPE:
