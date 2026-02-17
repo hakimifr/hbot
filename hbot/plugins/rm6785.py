@@ -77,6 +77,7 @@ NEW_FEATURES: list[str] = [
     "/post now accepts custom duration (in minutes). usage: `/post 69`, which will delay post by 69 minutes.",
     "A17 is now added as valid hashtag for linter",
     "debayan has been added as superuser (can use /auth, /deauth, and /post with --force option)",
+    "fixed a bug with custom duration, should work properly now.",
 ]
 
 
@@ -647,13 +648,13 @@ class PostUtils:
         )
         logger.info("%s", cls.posts)
         start_time = time.perf_counter()
-        while time.perf_counter() - start_time < 5 * 60:
+        while time.perf_counter() - start_time < delay_in_minutes * 60:
             if task.cancelled():
                 await confirmation_message.edit_text("__post cancelled__")
                 return
 
             elapsed_time = time.perf_counter() - start_time
-            remaining_time_mins = 5 - (elapsed_time // 60)
+            remaining_time_mins = delay_in_minutes - (elapsed_time // 60)
             remaining_time_secs = 60 - (elapsed_time % 60)
             await confirmation_message.edit_text(
                 f"__time remaining: {remaining_time_mins} minute(s) and {remaining_time_secs:.2f} seconds__"
