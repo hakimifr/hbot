@@ -693,7 +693,7 @@ class RM6785Plugin(BasePlugin):
             await message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
             return message
 
-        reply_message = await message.reply_text(text)
+        reply_message = await message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
         return reply_message
 
     @staticmethod
