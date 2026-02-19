@@ -27,7 +27,7 @@ from google.genai import types
 from google.genai.errors import ClientError
 from pyrogram import filters
 from pyrogram.client import Client
-from pyrogram.enums import ChatMemberStatus
+from pyrogram.enums import ChatMemberStatus, ParseMode
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types import Chat, Message, User
 
@@ -97,9 +97,9 @@ class Gemini(BasePlugin):
         line_no = frame.f_lineno
 
         if edit:
-            return await message.edit_text(f"__[{fn_name}:{line_no}] {text}__")
+            return await message.edit_text(f"__[{fn_name}:{line_no}] {text}__", parse_mode=ParseMode.MARKDOWN)
 
-        return await message.reply_text(f"__[{fn_name}:{line_no}] {text}__")
+        return await message.reply_text(f"__[{fn_name}:{line_no}] {text}__", parse_mode=ParseMode.MARKDOWN)
 
     async def search_handler(self, client: Client, message: Message) -> None:
         if os.getenv(key="GEMINI_API_KEY") is None:
@@ -201,7 +201,7 @@ class Gemini(BasePlugin):
                 await self._respond(
                     app,
                     msg,
-                    f"__banned [{user.full_name}](tg://user?id={user.id}), message contains fraud:__\n{message.text}",
+                    f"banned [{user.full_name}](tg://user?id={user.id}), message contains fraud:\n{message.text}",
                     edit=True,
                 )
 
