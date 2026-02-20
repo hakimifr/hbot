@@ -616,10 +616,13 @@ class PostUtils:
             new_feature_db.close()
 
     @staticmethod
-    async def _run_delayed(reply_to_message: Message, delay_in_minutes: float = 5):
+    async def _run_delayed(app: Client, reply_to_message: Message, delay_in_minutes: float = 5):
         try:
             await asyncio.sleep(delay_in_minutes * 60)
+            me = await app.get_me()
+            await app.update_profile(first_name="RM6785 ROM Post", last_name="")
             await reply_to_message.copy(RM6785_CHANNEL_ID.value)
+            await app.update_profile(first_name=me.first_name, last_name=me.last_name)  # type: ignore
         except asyncio.CancelledError:
             raise
 
@@ -631,11 +634,14 @@ class PostUtils:
         reply_to_message: Message,
         delay_in_minutes: float = 5,
     ) -> None:
+        me = await app.get_me()
+        await app.update_profile(first_name="RM6785 ROM Post", last_name="")
         msg = await app.send_sticker(RM6785_CHANNEL_ID.value, RM6785_STICKER_ID)
+        await app.update_profile(first_name=me.first_name, last_name=me.last_name)  # type: ignore
         msg = cast(Message, msg)
         chat = cast(Chat, msg.chat)
 
-        task = asyncio.create_task(cls._run_delayed(reply_to_message, delay_in_minutes=delay_in_minutes))
+        task = asyncio.create_task(cls._run_delayed(app, reply_to_message, delay_in_minutes=delay_in_minutes))
         cls.posts.append(
             PostData(
                 post_source_chat_id=cast(int, cast(Chat, reply_to_message.chat).id),
