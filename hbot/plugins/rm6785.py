@@ -78,6 +78,7 @@ NEW_FEATURES: list[str] = [
     "A17 is now added as valid hashtag for linter",
     "debayan has been added as superuser (can use /auth, /deauth, and /post with --force option)",
     "fixed a bug with custom duration, should work properly now.",
+    "my name is now changed temporarily to 'RM6785 ROM Post' when posting in channel",
 ]
 
 
