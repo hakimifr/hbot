@@ -62,6 +62,7 @@ class RM6785ChannelId(Enum):
 
 
 RM6785_CHANNEL_ID: RM6785ChannelId = RM6785ChannelId.Official
+RM6785_GROUP_ID: ChatId = -1001754321934
 RM6785_STICKER_ID: StickerId = "CAACAgUAAx0EX9CqtwACBvdpYhcQ4xFR18TbqiDxMasDZ4EWOQACLwQAAt4AAXFVonEmaEmbIrYeBA"
 TRIGGER_WHITELISTS: list[ChatId] = [
     -1001155763792,
@@ -79,6 +80,7 @@ NEW_FEATURES: list[str] = [
     "debayan has been added as superuser (can use /auth, /deauth, and /post with --force option)",
     "fixed a bug with custom duration, should work properly now.",
     "my name is now changed temporarily to 'RM6785 ROM Post' when posting in channel",
+    "posts are now forwarded to RM6785 group (@rm6785Official). can request for other chats if wanted",
 ]
 
 
@@ -622,7 +624,9 @@ class PostUtils:
             await asyncio.sleep(delay_in_minutes * 60)
             me = await app.get_me()
             await app.update_profile(first_name="RM6785 ROM Post", last_name="")
-            await reply_to_message.copy(RM6785_CHANNEL_ID.value)
+            msg = await reply_to_message.copy(RM6785_CHANNEL_ID.value)
+            msg_2: Message = await msg.forward(RM6785_GROUP_ID)  # type: ignore
+            await msg_2.pin()
             await app.update_profile(first_name=me.first_name, last_name=me.last_name)  # type: ignore
         except asyncio.CancelledError:
             raise
@@ -972,7 +976,11 @@ class RM6785Plugin(BasePlugin):
 
         try:
             await app.delete_messages(RM6785_CHANNEL_ID.value, message_ids)
-            await self._respond(app, message, "__messages deleted__")
+            await self._respond(
+                app,
+                message,
+                "__messages deleted. make sure you delete the one in RM6785 group as well (@rm6785Official)__",
+            )
         except Exception as e:
             await self._respond(app, message, f"__one or more message failed to be deleted: {repr(e)}__")
 
