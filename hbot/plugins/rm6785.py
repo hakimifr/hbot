@@ -194,7 +194,7 @@ class LintUtils:
         lint_status = not errors.strip()
         logger.info("lint completed, status: %s", lint_status)
 
-        lint_result_string = "Seems good 🤌\nBot approves" if lint_status else f"<b>ERRORS</b>\n{errors}"
+        lint_result_string = "Seems good 🤌\nBot approves" if lint_status else f"**ERRORS**\n{errors}"
 
         return LintStatus(lint_status, lint_result_string)
 
