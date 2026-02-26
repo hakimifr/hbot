@@ -5,6 +5,7 @@ from typing import override
 from jsondb.database import JsonDB
 from pyrogram import filters
 from pyrogram.client import Client
+from pyrogram.errors import FileReferenceExpired
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
@@ -44,8 +45,14 @@ class MyPlugin(BasePlugin):
             await self._respond(app, message, "__no gifs available. run /scan to scan/rescan komaru GIFs channel__")
             return
 
-        chosen_gif: FileId = random.choice(komaru_gifs)  # noqa: S311
-        await message.reply_animation(chosen_gif)
+        try:
+            chosen_gif: FileId = random.choice(komaru_gifs)  # noqa: S311
+            await message.reply_animation(chosen_gif)
+        except FileReferenceExpired:
+            logger.warning("file reference expired! rescanning automatically")
+            await self._respond(app, message, "__file reference expired, rescanning__")
+            await self.scan(app, message)
+            await self.komaru(app, message)
 
     async def scan(self, app: Client, message: Message) -> None:
         logger.info("clearing komaru_gifs list")
