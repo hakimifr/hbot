@@ -48,7 +48,10 @@ class MyPlugin(BasePlugin):
 
         try:
             chosen_gif: FileId = random.choice(komaru_gifs)  # noqa: S311
-            await message.reply_animation(chosen_gif)
+            if message.reply_to_message:
+                await message.reply_to_message.reply_animation(chosen_gif)
+            else:
+                await message.reply_animation(chosen_gif)
         except FileReferenceExpired:
             logger.warning("file reference expired! rescanning automatically")
             await self._respond(app, message, "__file reference expired, rescanning__")
