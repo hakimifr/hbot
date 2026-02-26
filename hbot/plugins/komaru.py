@@ -13,6 +13,7 @@ from hbot import PERSIST_DIR
 from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 
 type FileId = str
+type FileUniqueId = str
 type ChatId = int
 
 KOMARU_CHANNEL_ID: ChatId = -1002033198247
@@ -58,17 +59,28 @@ class MyPlugin(BasePlugin):
         logger.info("clearing komaru_gifs list")
         komaru_db.data["komaru_gifs"] = []
 
+        komaru_gifs_raw: dict[FileUniqueId, FileId] = {}
+        duplicates: int = 0
+
         msg = await self._respond(app, message, "__**scanner:** scanning komaru GIFs channel__")
         msg_ch = await app.send_message(KOMARU_CHANNEL_ID, "__scanning this channel__")
 
         async for m in app.get_chat_history(KOMARU_CHANNEL_ID):
-            if m.animation and m.animation.file_id:
-                logger.info("adding file_id '%s'", m.animation.file_id)
-                komaru_db.data["komaru_gifs"].append(m.animation.file_id)
+            if m.animation and m.animation.file_id and m.animation.file_unique_id:
+                if m.animation.file_unique_id in komaru_gifs_raw:
+                    duplicates += 1
+                    continue
 
+                komaru_gifs_raw.update({m.animation.file_unique_id: m.animation.file_id})
+
+        komaru_db.data["komaru_gifs"] = list(komaru_gifs_raw.values())
         komaru_db.write_database()
         await msg_ch.delete()
-        await msg.edit_text(f"__**scanner:** added {len(komaru_db.data['komaru_gifs'])} komaru GIFs__")
+        await msg.edit_text(
+            f"__**scanner:** {len(komaru_gifs_raw) + duplicates} komaru GIFs with "
+            f"{duplicates} duplicate(s) found, "
+            f"a total of {len(komaru_gifs_raw)} unique GIFs after deduplication__"
+        )
 
     @override
     def register_handlers(self) -> RegisterHandlersResult:
