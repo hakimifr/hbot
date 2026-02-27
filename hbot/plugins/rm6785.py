@@ -620,16 +620,17 @@ class PostUtils:
 
     @staticmethod
     async def _run_delayed(app: Client, reply_to_message: Message, delay_in_minutes: float = 5):
+        me = await app.get_me()
         try:
             await asyncio.sleep(delay_in_minutes * 60)
-            me = await app.get_me()
             await app.update_profile(first_name="RM6785 ROM Post", last_name="")
             msg = await reply_to_message.copy(RM6785_CHANNEL_ID.value)
             msg_2: Message = await msg.forward(RM6785_GROUP_ID)  # type: ignore
             await msg_2.pin()
-            await app.update_profile(first_name=me.first_name, last_name=me.last_name)  # type: ignore
         except asyncio.CancelledError:
             raise
+        finally:
+            await app.update_profile(first_name=me.first_name, last_name=me.last_name)  # type: ignore
 
     @classmethod
     async def post(
