@@ -673,7 +673,7 @@ class PostUtils:
             remaining_time_mins = int((delay_in_secs - elapsed_time) // 60)
             remaining_time_secs = int(60 - (elapsed_time % 60))
             await confirmation_message.edit_text(
-                f"__time remaining: {remaining_time_mins} minute(s) and {remaining_time_secs:.2f} seconds__"
+                f"__time remaining: {remaining_time_mins} minute(s) and {remaining_time_secs} seconds__"
             )
             await asyncio.sleep(2)
 
