@@ -81,6 +81,8 @@ NEW_FEATURES: list[str] = [
     "fixed a bug with custom duration, should work properly now.",
     "my name is now changed temporarily to 'RM6785 ROM Post' when posting in channel",
     "posts are now forwarded to RM6785 group (@rm6785Official). can request for other chats if wanted",
+    "bug fix: countdown should now work properly",
+    "bug fix: my name is restored properly in the event of cancelled post",
 ]
 
 
