@@ -658,22 +658,23 @@ class PostUtils:
             )
         )
         logger.info("%s", cls.posts)
+        delay_in_secs: float = delay_in_minutes * 60
         start_time = time.perf_counter()
-        while time.perf_counter() - start_time < delay_in_minutes * 60:
+        while time.perf_counter() - start_time < delay_in_secs:
             if task.cancelled():
                 await confirmation_message.edit_text("__post cancelled__")
                 return
 
             elapsed_time = time.perf_counter() - start_time
-            remaining_time_mins = delay_in_minutes - (elapsed_time // 60)
-            remaining_time_secs = 60 - (elapsed_time % 60)
+            # remaining_time_mins = delay_in_minutes - (elapsed_time // 60)
+            remaining_time_mins = int((delay_in_secs - elapsed_time) // 60)
+            remaining_time_secs = int(60 - (elapsed_time % 60))
             await confirmation_message.edit_text(
                 f"__time remaining: {remaining_time_mins} minute(s) and {remaining_time_secs:.2f} seconds__"
             )
             await asyncio.sleep(2)
 
-        if task.done():
-            await confirmation_message.edit_text("__posted. need to delete? use /delete__")
+        await confirmation_message.edit_text("__posted. need to delete? use /delete__")
 
     @classmethod
     async def cancel(cls, app: Client, reply_to_message: Message) -> PostCancelStatus:
