@@ -15,6 +15,7 @@
 # Copyright (c) 2026, Firdaus Hakimi <hakimifirdaus944@gmail.com>
 
 import logging
+import time
 from typing import override
 
 from pyrogram import filters
@@ -35,8 +36,14 @@ class PingPlugin(BasePlugin):
         self.app: Client = app
 
     async def ping(self, app: Client, message: Message) -> None:
-        logger.debug("ping, pong!")
-        await message.edit_text("Pong!")
+        logger.info("ping, pong!")
+
+        start = time.perf_counter()
+        await message.edit_text("__Pong!__")
+        delta_ms = (time.perf_counter() - start) * 1000
+
+        logger.info("latency: %f ms", delta_ms)
+        await message.edit_text(f"__Pong! latency: {delta_ms:.3f} ms__")
 
     @override
     def register_handlers(self) -> RegisterHandlersResult:
