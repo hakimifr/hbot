@@ -13,16 +13,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 # Copyright (c) 2026, Firdaus Hakimi <hakimifirdaus944@gmail.com>
-
 import asyncio
 import logging
+import traceback
 from typing import cast, override
 
 from pyrogram import filters
 from pyrogram.client import Client
-from pyrogram.errors import FloodWait
+from pyrogram.enums import ChatMemberStatus, ParseMode
+from pyrogram.errors import FloodWait, RPCError
 from pyrogram.handlers.message_handler import MessageHandler
-from pyrogram.types import Chat, ChatMember
+from pyrogram.types import Chat, ChatAdministratorRights, ChatMember
 from pyrogram.types.messages_and_media import Message
 
 from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
@@ -304,6 +305,51 @@ class ModPlugin(BasePlugin):
 
         await message.edit_text(final_msg)
 
+    async def promote(self, app: Client, message: Message) -> None:
+        assert message.chat
+        assert message.from_user
+
+        member = await message.chat.get_member(message.from_user.id)
+        if not member.privileges.can_promote_members:
+            await message.edit_text("__not enough rights to promote members__")
+            return
+
+        if not message.reply_to_message:
+            await message.edit_text("__reply to a user to promote__")
+            return
+
+        assert message.reply_to_message
+        assert message.reply_to_message.from_user
+        try:
+            await message.chat.promote_member(message.reply_to_message.from_user.id)
+            await message.edit_text("__promoted!__")
+        except RPCError:
+            tb = traceback.format_exc()
+            await message.edit_text(f"__promote failed!__\n```\n{tb}```", parse_mode=ParseMode.MARKDOWN)
+            raise
+
+    async def demote(self, app: Client, message: Message) -> None:
+        assert message.chat
+        assert message.from_user
+        assert message.reply_to_message
+        assert message.reply_to_message.from_user
+
+        member = await message.chat.get_member(message.from_user.id)
+        replied_member = await message.chat.get_member(message.reply_to_message.from_user.id)
+        if member.status == ChatMemberStatus.ADMINISTRATOR and replied_member.promoted_by != message.from_user:
+            await message.edit_text("__you cannot edit the rights of this admin__")
+            return
+
+        try:
+            await message.chat.promote_member(
+                message.reply_to_message.from_user.id, privileges=ChatAdministratorRights(can_manage_chat=False)
+            )
+            await message.edit_text("__demoted!__")
+        except RPCError:
+            tb = traceback.format_exc()
+            await message.edit_text(f"__demote failed!__\n```\n{tb}```", parse_mode=ParseMode.MARKDOWN)
+            raise
+
     @override
     def register_handlers(self) -> RegisterHandlersResult:
         base = filters.me
@@ -317,5 +363,7 @@ class ModPlugin(BasePlugin):
                 MessageHandler(self.id, filters.command("id", prefixes=self.prefixes) & base),
                 MessageHandler(self.info, filters.command("info", prefixes=self.prefixes) & base),
                 MessageHandler(self.deleted_users, filters.command("du", prefixes=self.prefixes) & base),
+                MessageHandler(self.promote, filters.command("promote", prefixes=self.prefixes) & base),
+                MessageHandler(self.demote, filters.command("demote", prefixes=self.prefixes) & base),
             ]
         )
