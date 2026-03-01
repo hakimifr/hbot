@@ -321,7 +321,9 @@ class ModPlugin(BasePlugin):
         assert message.reply_to_message
         assert message.reply_to_message.from_user
         try:
-            await message.chat.promote_member(message.reply_to_message.from_user.id)
+            member.privileges.can_promote_members = False
+            member.privileges.is_anonymous = False
+            await message.chat.promote_member(message.reply_to_message.from_user.id, privileges=member.privileges)
             await message.edit_text("__promoted!__")
         except RPCError:
             tb = traceback.format_exc()
