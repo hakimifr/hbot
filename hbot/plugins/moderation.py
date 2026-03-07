@@ -50,6 +50,14 @@ class ModPlugin(BasePlugin):
         return False
 
     async def purge(self, app: Client, message: Message) -> None:
+        assert message.text
+
+        silent: bool = False
+        if message.text[1:].startswith("sp"):
+            silent = True
+            logger.info("purging silently")
+            await message.delete()
+
         if not message.reply_to_message:
             await message.edit_text("__reply to a message!__")
             return
@@ -76,17 +84,18 @@ class ModPlugin(BasePlugin):
                 message_ids,
             )
 
-        confirmation_text: str = "__purged! this message will auto delete in 2 seconds__"
+        if not silent:
+            confirmation_text: str = "__purged! this message will auto delete in 2 seconds__"
 
-        if not await self._is_admin(app, message.chat.id):  # type: ignore
-            logger.info("user was NOT admin, only their messages are deleted")
-            confirmation_text += "\n__warning: you are not an admin, only your messages are purged__"
+            if not await self._is_admin(app, message.chat.id):  # type: ignore
+                logger.info("user was NOT admin, only their messages are deleted")
+                confirmation_text += "\n__warning: you are not an admin, only your messages are purged__"
 
-        logger.info("confirmation text sent, deleting in 2 seconds")
-        await message.edit_text(confirmation_text)
-        await asyncio.sleep(2)
-        await message.delete()
-        logger.info("confirmation text deleted")
+            logger.info("confirmation text sent, deleting in 2 seconds")
+            await message.edit_text(confirmation_text)
+            await asyncio.sleep(2)
+            await message.delete()
+            logger.info("confirmation text deleted")
 
     async def add(self, app: Client, message: Message) -> None:
         """Add a user to the current chat."""
@@ -358,6 +367,7 @@ class ModPlugin(BasePlugin):
         return RegisterHandlersResult(
             handlers=[
                 MessageHandler(self.purge, filters.command(["purge", "p"], prefixes=self.prefixes) & base),
+                MessageHandler(self.purge, filters.command(["spurge", "sp"], prefixes=self.prefixes) & base),
                 MessageHandler(self.ban, filters.command("ban", prefixes=self.prefixes) & base),
                 MessageHandler(self.unban, filters.command("unban", prefixes=self.prefixes) & base),
                 MessageHandler(self.kick, filters.command("kick", prefixes=self.prefixes) & base),
