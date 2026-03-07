@@ -361,6 +361,41 @@ class ModPlugin(BasePlugin):
             await message.edit_text(f"__demote failed!__\n```\n{tb}```", parse_mode=ParseMode.MARKDOWN)
             raise
 
+    async def relayfban(self, app: Client, message: Message) -> None:
+        assert message.from_user
+        assert message.chat
+
+        member = await message.chat.get_member(message.from_user.id)
+
+        if member.status not in {ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER}:
+            await message.reply_text("__you're not admin in this chat!__")
+            return
+
+        assert message.text
+        args = message.text.split(" ")
+
+        if args[0][1:].startswith("rf") or args[0][1:].startswith("relayfban"):
+            cmd = "fban"
+        else:
+            cmd = "unfban"
+
+        args.pop(0)
+
+        if message.reply_to_message:
+            assert message.reply_to_message.from_user
+            user_id = message.reply_to_message.from_user.id
+        else:
+            if len(args) < 1:
+                await message.reply_text("__no user id provided, and you did not reply to anyone!__")
+                return
+            user_id = args[0]
+            args.pop(0)
+
+        fban_reason = " ".join(args)
+
+        msg = await app.send_message(-1001754321934, f"!{cmd} {user_id} {fban_reason}")
+        await message.reply_text(msg.link)
+
     @override
     def register_handlers(self) -> RegisterHandlersResult:
         base = filters.me
@@ -370,6 +405,8 @@ class ModPlugin(BasePlugin):
                 MessageHandler(self.purge, filters.command(["spurge", "sp"], prefixes=self.prefixes) & base),
                 MessageHandler(self.ban, filters.command("ban", prefixes=self.prefixes) & base),
                 MessageHandler(self.unban, filters.command("unban", prefixes=self.prefixes) & base),
+                MessageHandler(self.relayfban, filters.command(["relayfban", "rf"], prefixes=self.prefixes)),
+                MessageHandler(self.relayfban, filters.command(["relayunfban", "ruf"], prefixes=self.prefixes)),
                 MessageHandler(self.kick, filters.command("kick", prefixes=self.prefixes) & base),
                 MessageHandler(self.add, filters.command("add", prefixes=self.prefixes) & base),
                 MessageHandler(self.id, filters.command("id", prefixes=self.prefixes) & base),
