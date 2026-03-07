@@ -13,8 +13,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 # Copyright (c) 2026, Firdaus Hakimi <hakimifirdaus944@gmail.com>
+
 import asyncio
 import logging
+import time
 import traceback
 from typing import cast, override
 
@@ -49,33 +51,51 @@ class ModPlugin(BasePlugin):
             return True
         return False
 
-    async def purge(self, app: Client, message: Message) -> None:
-        assert message.text
+    async def _respond(self, app: Client, message: Message, text: str) -> Message:
+        assert message.from_user
+        assert app.me
+        if message.from_user.id == app.me.id:
+            return await message.edit_text(text)
+        else:
+            return await message.reply_text(text)
 
+    async def purge(self, app: Client, message: Message) -> None:
+        assert message.from_user
+        assert message.chat
+
+        member = await message.chat.get_member(message.from_user.id)
+        if member.status not in {ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER}:
+            await message.reply_text("__you're not admin in this chat!__")
+            return
+
+        assert message.text
         silent: bool = False
         if message.text[1:].startswith("sp"):
             silent = True
             logger.info("purging silently")
-            await message.delete()
 
         if not message.reply_to_message:
-            await message.edit_text("__reply to a message!__")
+            await self._respond(app, message, "__reply to a message!__")
             return
 
         chat = cast(Chat, message.chat)
         message.text = cast(str, message.text)
 
         if chat.is_forum and "--force" not in message.text:
-            await message.edit_text(
-                "__using this command in topic-enabled chat is a bad idea, use --force to do it anyway.__"
+            await self._respond(
+                app,
+                message,
+                "__using this command in topic-enabled chat is a bad idea, use --force to do it anyway.__",
             )
             return
 
         logger.info("purging messages")
 
+        start_time = time.perf_counter()
+
         # delete 100-by-100
         for i in range(message.reply_to_message.id, message.id, 100):
-            chat_id = message.chat.id  # type: ignore
+            chat_id = message.chat.id
             message_ids = list(range(i, min(i + 100, message.id)))
 
             logger.info("deleting messages: %s", message_ids)
@@ -84,18 +104,16 @@ class ModPlugin(BasePlugin):
                 message_ids,
             )
 
+        time_delta = time.perf_counter() - start_time
+
         if not silent:
-            confirmation_text: str = "__purged! this message will auto delete in 2 seconds__"
-
-            if not await self._is_admin(app, message.chat.id):  # type: ignore
-                logger.info("user was NOT admin, only their messages are deleted")
-                confirmation_text += "\n__warning: you are not an admin, only your messages are purged__"
-
-            logger.info("confirmation text sent, deleting in 2 seconds")
-            await message.edit_text(confirmation_text)
-            await asyncio.sleep(2)
+            assert app.me
+            if message.from_user.id != app.me.id:
+                app.loop.create_task(message.delete())
+            amount_of_msgs = len(range(message.reply_to_message.id, message.id)) + 1
+            await self._respond(app, message, f"__purged! {amount_of_msgs} messages purged in {time_delta} seconds__")
+        else:
             await message.delete()
-            logger.info("confirmation text deleted")
 
     async def add(self, app: Client, message: Message) -> None:
         """Add a user to the current chat."""
@@ -401,8 +419,8 @@ class ModPlugin(BasePlugin):
         base = filters.me
         return RegisterHandlersResult(
             handlers=[
-                MessageHandler(self.purge, filters.command(["purge", "p"], prefixes=self.prefixes) & base),
-                MessageHandler(self.purge, filters.command(["spurge", "sp"], prefixes=self.prefixes) & base),
+                MessageHandler(self.purge, filters.command(["purge", "p"], prefixes=self.prefixes)),
+                MessageHandler(self.purge, filters.command(["spurge", "sp"], prefixes=self.prefixes)),
                 MessageHandler(self.ban, filters.command("ban", prefixes=self.prefixes) & base),
                 MessageHandler(self.unban, filters.command("unban", prefixes=self.prefixes) & base),
                 MessageHandler(self.relayfban, filters.command(["relayfban", "rf"], prefixes=self.prefixes)),
