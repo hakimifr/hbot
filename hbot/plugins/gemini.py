@@ -216,7 +216,7 @@ class Gemini(BasePlugin):
                 ),
                 MessageHandler(
                     self.message_fraud_detector,
-                    filters.admin,
+                    filters.admin & filters.text,
                 ),
             ],
         )
