@@ -152,6 +152,15 @@ class Gemini(BasePlugin):
         chat = cast(Chat, message.chat)
         text = cast(str, message.caption) if message.caption else cast(str, message.text)
 
+        if user.is_bot:
+            logger.info(
+                "user [userid=%d, fullname=%s, username=%s] is a bot, skipping",
+                user.id,
+                user.full_name,
+                user.username,
+            )
+            return
+
         if chat.id in FRAUD_BLACKLIST_CHATS:
             logger.info("chat %s id=%d in blacklist, skipping", chat.full_name, chat.id)
             return
