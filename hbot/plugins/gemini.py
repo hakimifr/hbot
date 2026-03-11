@@ -195,7 +195,7 @@ class Gemini(BasePlugin):
                     )
                     return
 
-                logger.info("BAN [userid=%d, fullname=%s] fraud detected")
+                logger.info("BAN [userid=%d, fullname=%s] fraud detected", user.id, user.full_name)
                 msg = await self._respond(app, message, "fraud detected, banning user")
                 await chat.ban_member(user.id)
                 await self._respond(
