@@ -150,7 +150,7 @@ class Gemini(BasePlugin):
     async def message_fraud_detector(self, app: Client, message: Message) -> None:
         user = cast(User, message.from_user)
         chat = cast(Chat, message.chat)
-        text = cast(str, message.text)
+        text = cast(str, message.caption) if message.caption else cast(str, message.text)
 
         if chat.id in FRAUD_BLACKLIST_CHATS:
             logger.info("chat %s id=%d in blacklist, skipping", chat.full_name, chat.id)
