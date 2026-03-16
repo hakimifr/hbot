@@ -18,19 +18,31 @@ import asyncio
 import logging
 import time
 import traceback
+from dataclasses import asdict, dataclass
 from typing import cast, override
 
+from jsondb.database import JsonDB
 from pyrogram import filters
 from pyrogram.client import Client
 from pyrogram.enums import ChatMemberStatus, ParseMode
 from pyrogram.errors import FloodWait, RPCError
 from pyrogram.handlers.message_handler import MessageHandler
-from pyrogram.types import Chat, ChatAdministratorRights, ChatMember
+from pyrogram.types import Chat, ChatAdministratorRights, ChatMember, User
 from pyrogram.types.messages_and_media import Message
 
+from hbot import PERSIST_DIR
 from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 
 logger = logging.getLogger(__name__)
+block_db: JsonDB = JsonDB(f"{__name__}:block", PERSIST_DIR)
+
+
+@dataclass
+class BlockEntry:
+    chat_id: int
+    blocked_stickers: list[str]
+    blocked_packs: list[str]
+    blocked_gifs: list[str]
 
 
 class ModPlugin(BasePlugin):
@@ -40,14 +52,18 @@ class ModPlugin(BasePlugin):
     def __init__(self, app: Client) -> None:
         self.app: Client = app
 
-    async def _is_admin(self, app: Client, chat_id: int) -> bool:
+    async def _is_myself_admin(self, app: Client, chat_id: int) -> bool:
         logger.info("checking admin status")
         admin_status: bool | None = (await app.get_chat(chat_id)).is_admin
 
-        # it can also be None is it's private chat, for the sake of simplicity,
-        # we return True
         logger.info("admin status: %s", admin_status)
         if admin_status or admin_status is None:
+            return True
+        return False
+
+    async def _is_user_admin(self, app: Client, chat: Chat, user: User) -> bool:
+        member = await chat.get_member(user.id)
+        if member.status in {ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER}:
             return True
         return False
 
@@ -235,7 +251,7 @@ class ModPlugin(BasePlugin):
 
     # TODO: check if this is PM and forbid this command from running
     async def kick(self, app: Client, message: Message) -> None:
-        if not self._is_admin(app, message.chat.id):  # type: ignore
+        if not await self._is_user_admin(app, message.chat, message.from_user):  # type: ignore
             await message.edit_text("__you are not an admin!__")
             return
 
@@ -414,10 +430,157 @@ class ModPlugin(BasePlugin):
         msg = await app.send_message(-1001754321934, f"!{cmd} {user_id} {fban_reason}")
         await message.reply_text(msg.link)
 
+    async def sgblock(self, app: Client, message: Message, block_whole_pack: bool = False) -> None:
+        assert message.chat
+        assert message.chat.id
+        assert message.from_user
+        if not await self._is_myself_admin(app, message.chat.id):
+            await message.edit_text("__I am not admin!__")
+            return
+        if not await self._is_user_admin(app, message.chat, message.from_user):
+            await message.edit_text("__you're not admin!__")
+            return
+        if not message.reply_to_message:
+            await message.edit_text("__reply to a message!__")
+            return
+
+        assert message.reply_to_message
+        if message.reply_to_message.sticker:
+            logger.info("document type is sticker")
+            doc_type = "sticker"
+        elif message.reply_to_message.animation:
+            logger.info("document type is gif")
+            doc_type = "gif"
+        else:
+            await message.reply_text("__reply to a gif/sticker!__")
+            return
+
+        chat_id = message.chat.id
+        chat_id_str = str(chat_id)
+
+        if not block_db.data.get(chat_id_str):
+            block_db.data.update({chat_id_str: asdict(BlockEntry(chat_id, [], [], []))})
+
+        entry = BlockEntry(**cast(dict, block_db.data.get(chat_id_str)))
+        if doc_type == "sticker" and block_whole_pack:
+            assert message.reply_to_message.sticker
+            entry.blocked_packs.append(message.reply_to_message.sticker.set_name)
+        if doc_type == "sticker":
+            assert message.reply_to_message.sticker
+            entry.blocked_stickers.append(message.reply_to_message.sticker.file_unique_id)
+        elif doc_type == "gif":
+            assert message.reply_to_message.animation
+            entry.blocked_gifs.append(message.reply_to_message.animation.file_unique_id)
+        else:
+            raise AssertionError("unreachable")
+
+        block_db.data.update({chat_id_str: asdict(entry)})
+
+        await self._respond(
+            app,
+            message,
+            f"__added {doc_type}{' pack' if block_whole_pack else ''} to blocklist.__",
+        )
+
+    async def spackblock(self, app: Client, message: Message) -> None:
+        await self.sgblock(app, message, block_whole_pack=True)
+
+    async def sgunblock(self, app: Client, message: Message, unblock_whole_pack: bool = False) -> None:
+        assert message.chat
+        assert message.chat.id
+        assert message.from_user
+        if not await self._is_myself_admin(app, message.chat.id):
+            await message.edit_text("__I am not admin!__")
+            return
+        if not await self._is_user_admin(app, message.chat, message.from_user):
+            await message.edit_text("__you're not admin!__")
+            return
+        if not message.reply_to_message:
+            await message.edit_text("__reply to a message!__")
+            return
+
+        assert message.reply_to_message
+        if message.reply_to_message.sticker:
+            logger.info("document type is sticker")
+            doc_type = "sticker"
+        elif message.reply_to_message.animation:
+            logger.info("document type is gif")
+            doc_type = "gif"
+        else:
+            await message.reply_text("__reply to a gif/sticker!__")
+            return
+
+        chat_id = message.chat.id
+        chat_id_str = str(chat_id)
+
+        if not block_db.data.get(chat_id_str):
+            await self._respond(app, message, "__nothing is blocked here.__")
+            return
+
+        entry = BlockEntry(**cast(dict, block_db.data.get(chat_id_str)))
+
+        try:
+            if doc_type == "sticker" and unblock_whole_pack:
+                assert message.reply_to_message.sticker
+                entry.blocked_packs.remove(message.reply_to_message.sticker.set_name)
+            if doc_type == "sticker":
+                assert message.reply_to_message.sticker
+                entry.blocked_stickers.remove(message.reply_to_message.sticker.file_unique_id)
+            elif doc_type == "gif":
+                assert message.reply_to_message.animation
+                entry.blocked_gifs.remove(message.reply_to_message.animation.file_unique_id)
+            else:
+                raise AssertionError("unreachable")
+            block_db.data.update({chat_id_str: asdict(entry)})
+        except ValueError:
+            await self._respond(app, message, "__that wasn't in blocklist!__")
+        else:
+            await self._respond(
+                app,
+                message,
+                f"__removed {doc_type}{' pack' if unblock_whole_pack else ''} from blocklist.__",
+            )
+
+    async def spackunblock(self, app: Client, message: Message) -> None:
+        await self.sgunblock(app, message, unblock_whole_pack=True)
+
+    async def blocker(self, app: Client, message: Message) -> None:
+        assert message.chat
+        assert message.chat.id
+        assert message.from_user
+        chat_id_str = str(message.chat.id)
+        raw_entry: dict | None = block_db.data.get(chat_id_str)
+
+        if not raw_entry:
+            logger.info(
+                "no block entry for chat [id=%d, name=%s], ignore",
+                message.chat.id,
+                message.chat.title,
+            )
+            return
+
+        entry = BlockEntry(**raw_entry)
+
+        if (
+            message.sticker
+            and message.sticker.set_name not in entry.blocked_packs
+            and message.sticker.file_unique_id not in entry.blocked_stickers
+        ):
+            return
+        if message.animation and message.animation.file_unique_id not in entry.blocked_gifs:
+            return
+
+        if await self._is_user_admin(app, message.chat, message.from_user):
+            logger.info("ignoring blocked sticker/gif from admin")
+            return
+
+        await message.delete()
+
     @override
     def register_handlers(self) -> RegisterHandlersResult:
         base = filters.me
         return RegisterHandlersResult(
+            group=3,
             handlers=[
                 MessageHandler(self.purge, filters.command(["purge", "p"], prefixes=self.prefixes)),
                 MessageHandler(self.purge, filters.command(["spurge", "sp"], prefixes=self.prefixes)),
@@ -432,5 +595,16 @@ class ModPlugin(BasePlugin):
                 MessageHandler(self.deleted_users, filters.command("du", prefixes=self.prefixes) & base),
                 MessageHandler(self.promote, filters.command("promote", prefixes=self.prefixes) & base),
                 MessageHandler(self.demote, filters.command("demote", prefixes=self.prefixes) & base),
-            ]
+                MessageHandler(self.sgblock, filters.command(["block", "b"], prefixes=self.prefixes)),
+                MessageHandler(
+                    self.spackblock,
+                    filters.command(["pb", "bp", "blockpack", "packblock"], prefixes=self.prefixes),
+                ),
+                MessageHandler(self.sgunblock, filters.command(["unblock", "ub"], prefixes=self.prefixes)),
+                MessageHandler(
+                    self.spackunblock,
+                    filters.command(["unpb", "unbp", "unblockpack", "unpackblock"], prefixes=self.prefixes),
+                ),
+                MessageHandler(self.blocker, filters.admin & (filters.sticker | filters.animation)),
+            ],
         )
