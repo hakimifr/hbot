@@ -223,9 +223,9 @@ class Gemini(BasePlugin):
                     self.search_handler,
                     filters.command("ask", prefixes=self.prefixes) & filters.me,
                 ),
-                MessageHandler(
-                    self.message_fraud_detector,
-                    filters.admin & filters.text,
-                ),
+                # MessageHandler(
+                #     self.message_fraud_detector,
+                #     filters.admin & filters.text,
+                # ),
             ],
         )
