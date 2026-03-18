@@ -9,6 +9,7 @@ from logging import LogRecord
 from logging.handlers import QueueHandler
 
 from rich.console import Console
+from rich.markup import escape
 from rich.text import Text
 
 logging.basicConfig(level=logging.INFO)
@@ -71,7 +72,7 @@ class Logger:
                             f"[{time}] [{level_colour}]{log_data.levelname}[/{level_colour}] "
                             f"[grey]<{log_data.filename}>[/grey] {log_data.name}: "
                         )
-                        msg = re.sub(r"^", prefix, log_data.getMessage(), count=0).replace("\n", f"\n{prefix}")
+                        msg = re.sub(r"^", prefix, escape(log_data.getMessage()), count=0).replace("\n", f"\n{prefix}")
                         self.console.print(msg)
                         f.write(Text.from_markup(msg).plain + "\n")
                         f.flush()
