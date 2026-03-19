@@ -16,7 +16,7 @@
 
 import json
 import logging
-from dataclasses import dataclass, fields, is_dataclass
+from dataclasses import dataclass
 from itertools import chain, islice, repeat
 from textwrap import dedent
 from typing import Any, override
@@ -32,6 +32,7 @@ from pyrogram.types.messages_and_media import Message
 
 from hbot import PERSIST_DIR
 from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
+from hbot.core.utils import from_dict
 
 logger = logging.getLogger(__name__)
 db: JsonDB = JsonDB(__name__, PERSIST_DIR)
@@ -68,20 +69,6 @@ class PrayerData:
     bearing: str
 
 
-def dict_to_dataclass[T](cls: type[T], data: dict[str, Any]) -> T:
-    kwargs = {}
-
-    for f in fields(cls):  # type: ignore
-        value = data[f.name]
-
-        if is_dataclass(f.type):
-            kwargs[f.name] = dict_to_dataclass(f.type, value)  # type: ignore
-        else:
-            kwargs[f.name] = value
-
-    return cls(**kwargs)
-
-
 class SolatPlugin(BasePlugin):
     name: str = "Khusus untuk solat"
     description: str = "Buat masa ni ada pasal waktu solat je, maybe more soon."
@@ -104,14 +91,24 @@ class SolatPlugin(BasePlugin):
 
         return [x.jakimCode for x in self.zones_data]
 
+    async def _ensure_zones_cached(self) -> None:
+        """Fetch zone data from the API and cache it locally if not already present.
+
+        This consolidates the identical zone-fetching blocks that previously
+        appeared independently in both ``waktu_solat`` and ``get_zones``.
+        """
+        if len(self.zones_data) != 0:
+            return
+
+        logger.info("zones are not yet cached. building cache...")
+        response_json = (await self.http_client.get("https://api.waktusolat.app/zones", timeout=10)).json()
+        db.data["zones"] = response_json
+        self.zones_data = [ZoneData(**z) for z in response_json]
+        self.valid_jakimcode = self._get_valid_jakimcode()
+        db.write_database()
+
     async def waktu_solat(self, app: Client, message: Message) -> None:
-        if len(self.zones_data) == 0:
-            logger.info("zones are not yet cached. building cache...")
-            response_json = (await self.http_client.get("https://api.waktusolat.app/zones", timeout=10)).json()
-            db.data["zones"] = response_json
-            self.zones_data = [ZoneData(**z) for z in response_json]
-            self.valid_jakimcode = self._get_valid_jakimcode()
-            db.write_database()
+        await self._ensure_zones_cached()
 
         splitmsg: list[str] = message.text.split(" ")  # type: ignore
         if len(splitmsg) < 3:
@@ -144,7 +141,7 @@ class SolatPlugin(BasePlugin):
             )
             return
 
-        prayer_data: PrayerData = dict_to_dataclass(PrayerData, response.json())
+        prayer_data: PrayerData = from_dict(PrayerData, response.json())
         final_output_str: str = dedent(
             f"""
             **query result:**
@@ -177,13 +174,7 @@ class SolatPlugin(BasePlugin):
         await message.edit_text(final_output_str)
 
     async def get_zones(self, app: Client, message: Message) -> None:
-        if len(self.zones_data) == 0:
-            logger.info("zones are not yet cached. building cache...")
-            response_json = (await self.http_client.get("https://api.waktusolat.app/zones", timeout=10)).json()
-            db.data["zones"] = response_json
-            self.zones_data = [ZoneData(**z) for z in response_json]
-            self.valid_jakimcode = self._get_valid_jakimcode()
-            db.write_database()
+        await self._ensure_zones_cached()
 
         async with NamedTemporaryFile("w+", suffix=".json") as f:
             await f.write(json.dumps(db.data.get("zones"), indent=2))
