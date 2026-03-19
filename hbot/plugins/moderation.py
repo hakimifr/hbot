@@ -27,7 +27,7 @@ from pyrogram.client import Client
 from pyrogram.enums import ChatMemberStatus, ParseMode
 from pyrogram.errors import FloodWait, RPCError
 from pyrogram.handlers.message_handler import MessageHandler
-from pyrogram.types import Chat, ChatAdministratorRights, ChatMember, User
+from pyrogram.types import Chat, ChatAdministratorRights, ChatMember
 from pyrogram.types.messages_and_media import Message
 
 from hbot import PERSIST_DIR
@@ -176,7 +176,7 @@ class ModPlugin(BasePlugin):
             logger.info("fetching full user data for user ID: %s", user_id)
             user = await app.get_users(user_id)
 
-            info_text = "**👤 User Information**\n\n"
+            info_text = "**\U0001f464 User Information**\n\n"
             info_text += f"**ID:** `{user.id}`\n"
             info_text += f"**First Name:** {user.first_name}\n"
 
