@@ -27,7 +27,6 @@ from pyrogram.client import Client
 from pyrogram.handlers.edited_message_handler import EditedMessageHandler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
-from pyrogram.types.user_and_chats import Chat, User
 
 from hbot import PERSIST_DIR
 from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
