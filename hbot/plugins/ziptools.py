@@ -86,7 +86,7 @@ class MyPlugin(BasePlugin):
 
         This eliminates the near-identical listing loops in unzipl() and untarl().
         """
-        file_list = f"**\ud83d\udce6 {archive_type} Contents**\n\n"
+        file_list = f"**\U0001f4e6 {archive_type} Contents**\n\n"
         total_size = 0
         file_count = 0
         dir_count = 0
@@ -94,11 +94,11 @@ class MyPlugin(BasePlugin):
         for is_dir, name, size in entries:
             if is_dir:
                 dir_count += 1
-                file_list += f"\ud83d\udcc1 `{name}`\n"
+                file_list += f"\U0001f4c1 `{name}`\n"
             else:
                 file_count += 1
                 total_size += size
-                file_list += f"\ud83d\udcc4 `{name}` ({MyPlugin._format_size(size)})\n"
+                file_list += f"\U0001f4c4 `{name}` ({MyPlugin._format_size(size)})\n"
 
         total_mb = total_size / (1024 * 1024)
         summary = f"**Files:** {file_count} | **Dirs:** {dir_count} | **Total Size:** {total_mb:.2f}MB\n\n"
@@ -124,7 +124,10 @@ class MyPlugin(BasePlugin):
             await message.edit_text("__file list too long, uploading as text file__")
             async with NamedTemporaryFile("w", suffix=filename_suffix, encoding="utf-8") as tf:
                 plain_text = (
-                    text.replace("**", "").replace("\ud83d\udcc1", "DIR:").replace("\ud83d\udcc4", "FILE:").replace("`", "")
+                    text.replace("**", "")
+                    .replace("\U0001f4c1", "DIR:")
+                    .replace("\U0001f4c4", "FILE:")
+                    .replace("`", "")
                 )
                 await tf.write(plain_text)
                 await tf.flush()
