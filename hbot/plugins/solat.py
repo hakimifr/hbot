@@ -1,9 +1,25 @@
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3 of the License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# Copyright (c) 2026, Firdaus Hakimi <hakimifirdaus944@gmail.com>
+
 import json
 import logging
-from dataclasses import dataclass, fields, is_dataclass
+from dataclasses import dataclass
 from itertools import chain, islice, repeat
 from textwrap import dedent
-from typing import Any
+from typing import Any, override
 
 from anyio import NamedTemporaryFile
 from httpx import AsyncClient
@@ -11,12 +27,12 @@ from jsondb.database import JsonDB
 from pyrogram import filters
 from pyrogram.client import Client
 from pyrogram.enums import ParseMode
-from pyrogram.handlers.handler import Handler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
 from hbot import PERSIST_DIR
-from hbot.base_plugin import BasePlugin
+from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
+from hbot.core.utils import from_dict
 
 logger = logging.getLogger(__name__)
 db: JsonDB = JsonDB(__name__, PERSIST_DIR)
@@ -53,20 +69,6 @@ class PrayerData:
     bearing: str
 
 
-def dict_to_dataclass[T](cls: type[T], data: dict[str, Any]) -> T:
-    kwargs = {}
-
-    for f in fields(cls):  # type: ignore
-        value = data[f.name]
-
-        if is_dataclass(f.type):
-            kwargs[f.name] = dict_to_dataclass(f.type, value)  # type: ignore
-        else:
-            kwargs[f.name] = value
-
-    return cls(**kwargs)
-
-
 class SolatPlugin(BasePlugin):
     name: str = "Khusus untuk solat"
     description: str = "Buat masa ni ada pasal waktu solat je, maybe more soon."
@@ -89,14 +91,24 @@ class SolatPlugin(BasePlugin):
 
         return [x.jakimCode for x in self.zones_data]
 
+    async def _ensure_zones_cached(self) -> None:
+        """Fetch zone data from the API and cache it locally if not already present.
+
+        This consolidates the identical zone-fetching blocks that previously
+        appeared independently in both ``waktu_solat`` and ``get_zones``.
+        """
+        if len(self.zones_data) != 0:
+            return
+
+        logger.info("zones are not yet cached. building cache...")
+        response_json = (await self.http_client.get("https://api.waktusolat.app/zones", timeout=10)).json()
+        db.data["zones"] = response_json
+        self.zones_data = [ZoneData(**z) for z in response_json]
+        self.valid_jakimcode = self._get_valid_jakimcode()
+        db.write_database()
+
     async def waktu_solat(self, app: Client, message: Message) -> None:
-        if len(self.zones_data) == 0:
-            logger.info("zones are not yet cached. building cache...")
-            response_json = (await self.http_client.get("https://api.waktusolat.app/zones", timeout=10)).json()
-            db.data["zones"] = response_json
-            self.zones_data = [ZoneData(**z) for z in response_json]
-            self.valid_jakimcode = self._get_valid_jakimcode()
-            db.write_database()
+        await self._ensure_zones_cached()
 
         splitmsg: list[str] = message.text.split(" ")  # type: ignore
         if len(splitmsg) < 3:
@@ -129,7 +141,7 @@ class SolatPlugin(BasePlugin):
             )
             return
 
-        prayer_data: PrayerData = dict_to_dataclass(PrayerData, response.json())
+        prayer_data: PrayerData = from_dict(PrayerData, response.json())
         final_output_str: str = dedent(
             f"""
             **query result:**
@@ -162,13 +174,7 @@ class SolatPlugin(BasePlugin):
         await message.edit_text(final_output_str)
 
     async def get_zones(self, app: Client, message: Message) -> None:
-        if len(self.zones_data) == 0:
-            logger.info("zones are not yet cached. building cache...")
-            response_json = (await self.http_client.get("https://api.waktusolat.app/zones", timeout=10)).json()
-            db.data["zones"] = response_json
-            self.zones_data = [ZoneData(**z) for z in response_json]
-            self.valid_jakimcode = self._get_valid_jakimcode()
-            db.write_database()
+        await self._ensure_zones_cached()
 
         async with NamedTemporaryFile("w+", suffix=".json") as f:
             await f.write(json.dumps(db.data.get("zones"), indent=2))
@@ -176,14 +182,17 @@ class SolatPlugin(BasePlugin):
             await message.reply_document(f.wrapped.name)
             await message.delete()
 
-    def register_handlers(self) -> list[Handler]:
-        return [
-            MessageHandler(
-                self.waktu_solat,
-                filters.command(["waktusolat", "waktu_solat", "ws"], prefixes=self.prefixes) & filters.me,
-            ),
-            MessageHandler(
-                self.get_zones,
-                filters.command("getzones", prefixes=self.prefixes) & filters.me,
-            ),
-        ]
+    @override
+    def register_handlers(self) -> RegisterHandlersResult:
+        return RegisterHandlersResult(
+            handlers=[
+                MessageHandler(
+                    self.waktu_solat,
+                    filters.command(["waktusolat", "waktu_solat", "ws"], prefixes=self.prefixes) & filters.me,
+                ),
+                MessageHandler(
+                    self.get_zones,
+                    filters.command("getzones", prefixes=self.prefixes) & filters.me,
+                ),
+            ]
+        )
