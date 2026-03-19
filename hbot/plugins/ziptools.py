@@ -33,6 +33,8 @@ from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 
 logger = logging.getLogger(__name__)
 
+_MAX_MSG_LENGTH = 4000
+
 
 class MyPlugin(BasePlugin):
     name: str = "Archive Tools"
@@ -44,25 +46,106 @@ class MyPlugin(BasePlugin):
     async def progress_logger(self, current: int, total: int):
         logger.info("zip download progress: %s/%s (%s)", current, total, (current / total) * 100)
 
+    # -------------------------------------------------------------------------
+    # Shared private helpers
+    # -------------------------------------------------------------------------
+
+    async def _require_document_reply(self, message: Message, prompt: str) -> bool:
+        """Return ``True`` if the pre-conditions for an archive command are met.
+
+        Sends the appropriate error message and returns ``False`` when:
+        - there is no reply-to message, or
+        - the replied-to message does not have a document attached.
+
+        This consolidates the identical guard blocks that previously appeared
+        at the top of every archive handler (unzip, unzipl, untar, untarl).
+        """
+        if not message.reply_to_message:
+            await message.edit_text(f"__reply to the file that you want to {prompt}__")
+            return False
+        if not message.reply_to_message.document:
+            await message.edit_text(f"__please reply to a {prompt} file__")
+            return False
+        return True
+
+    @staticmethod
+    def _format_size(size_bytes: int) -> str:
+        """Return a human-readable size string (KB or MB)."""
+        size_kb = size_bytes / 1024
+        if size_kb < 1024:
+            return f"{size_kb:.1f}KB"
+        return f"{size_kb / 1024:.1f}MB"
+
+    @staticmethod
+    def _build_archive_listing(entries: list[tuple[bool, str, int]], archive_type: str) -> str:
+        """Build a Telegram-formatted file listing string for an archive.
+
+        Args:
+            entries: A list of ``(is_dir, name, size_bytes)`` tuples.
+            archive_type: Label shown in the heading, e.g. ``"Zip"`` or ``"Tar"``.
+
+        This eliminates the near-identical listing loops in unzipl() and untarl().
+        """
+        file_list = f"**\ud83d\udce6 {archive_type} Contents**\n\n"
+        total_size = 0
+        file_count = 0
+        dir_count = 0
+
+        for is_dir, name, size in entries:
+            if is_dir:
+                dir_count += 1
+                file_list += f"\ud83d\udcc1 `{name}`\n"
+            else:
+                file_count += 1
+                total_size += size
+                file_list += f"\ud83d\udcc4 `{name}` ({MyPlugin._format_size(size)})\n"
+
+        total_mb = total_size / (1024 * 1024)
+        summary = f"**Files:** {file_count} | **Dirs:** {dir_count} | **Total Size:** {total_mb:.2f}MB\n\n"
+        file_list = file_list[:20] + summary + file_list[20:]
+        return file_list
+
+    async def _send_or_upload_text(
+        self,
+        message: Message,
+        text: str,
+        filename_suffix: str,
+        caption: str,
+    ) -> None:
+        """Send *text* as a Telegram message, or upload it as a file if too long.
+
+        Consolidates the ``len(x) <= max_length / else upload`` pattern that
+        previously appeared independently in unzipl() and untarl().
+        """
+        if len(text) <= _MAX_MSG_LENGTH:
+            await message.edit_text(text)
+        else:
+            logger.info("text too long (%d chars), uploading as file", len(text))
+            await message.edit_text("__file list too long, uploading as text file__")
+            async with NamedTemporaryFile("w", suffix=filename_suffix, encoding="utf-8") as tf:
+                plain_text = (
+                    text.replace("**", "").replace("\ud83d\udcc1", "DIR:").replace("\ud83d\udcc4", "FILE:").replace("`", "")
+                )
+                await tf.write(plain_text)
+                await tf.flush()
+                await message.reply_document(tf.wrapped.name, caption=caption)
+
+    # -------------------------------------------------------------------------
+    # Command handlers
+    # -------------------------------------------------------------------------
+
     async def unzip(self, app: Client, message: Message) -> None:
         """Unzip a file, optionally only extracting specific files."""
-        if not message.reply_to_message:
-            await message.edit_text("__reply to the file that you want to unzip__")
+        if not await self._require_document_reply(message, "unzip"):
             return
 
         replied_to_message: Message = cast(Message, message.reply_to_message)
 
-        if not replied_to_message.document:
-            await message.edit_text("__please reply to a zip file__")
-            return
-
-        # Parse command for specific files to extract
         command_text: str = cast(str, message.text).strip()
         parts = command_text.split(maxsplit=1)
         files_to_extract: list[str] | None = None
 
         if len(parts) > 1:
-            # Split by whitespace to get list of files
             files_to_extract = parts[1].split()
             logger.info("extracting only specific files: %s", files_to_extract)
 
@@ -83,7 +166,6 @@ class MyPlugin(BasePlugin):
 
             zipfile: ZipFile = ZipFile(f.wrapped.name)
 
-            # If specific files requested, filter the namelist
             if files_to_extract:
                 all_files = zipfile.namelist()
                 namelist: list[Path] = []
@@ -91,7 +173,6 @@ class MyPlugin(BasePlugin):
 
                 for requested_pattern in files_to_extract:
                     for zip_file in all_files:
-                        # Use fnmatch for pattern matching (supports wildcards like *.txt)
                         if fnmatch.fnmatch(zip_file, requested_pattern) and zip_file not in matched_files:
                             namelist.append(Path(d).joinpath(zip_file))
                             matched_files.add(zip_file)
@@ -102,7 +183,6 @@ class MyPlugin(BasePlugin):
                     await message.edit_text("__no matching files found in zip__")
                     return
 
-                # Extract only specific files
                 logger.info("extracting %d specific files", len(namelist))
                 start_time = time.perf_counter()
                 for p in namelist:
@@ -111,7 +191,7 @@ class MyPlugin(BasePlugin):
                 duration_unzip = time.perf_counter() - start_time
                 logger.info("selective unzip took %s seconds", duration_unzip)
             else:
-                namelist: list[Path] = [Path(d).joinpath(x) for x in zipfile.namelist()]
+                namelist = [Path(d).joinpath(x) for x in zipfile.namelist()]
                 logger.info("zip file name list (with temp dir): %s", namelist)
                 logger.info("extracting zip file, dir = '%s'", d)
 
@@ -134,16 +214,10 @@ class MyPlugin(BasePlugin):
 
     async def unzipl(self, app: Client, message: Message) -> None:
         """List contents of a zip file with detailed information."""
-        if not message.reply_to_message:
-            await message.edit_text("__reply to the file that you want to view__")
+        if not await self._require_document_reply(message, "view"):
             return
 
         replied_to_message: Message = cast(Message, message.reply_to_message)
-
-        if not replied_to_message.document:
-            await message.edit_text("__please reply to a zip file__")
-            return
-
         loop: AbstractEventLoop = get_running_loop()
         document: Document = cast(Document, replied_to_message.document)
 
@@ -158,64 +232,19 @@ class MyPlugin(BasePlugin):
                 return
 
             zipfile: ZipFile = ZipFile(f.wrapped.name)
-
-            # Build a detailed file list
             logger.info("building detailed file list for zip")
-            file_list = "**📦 Zip Contents**\n\n"
-            total_size = 0
-            file_count = 0
-            dir_count = 0
 
-            for info in zipfile.infolist():
-                if info.is_dir():
-                    dir_count += 1
-                    file_list += f"📁 `{info.filename}`\n"
-                else:
-                    file_count += 1
-                    size_kb = info.file_size / 1024
-                    total_size += info.file_size
-                    if size_kb < 1024:
-                        size_str = f"{size_kb:.1f}KB"
-                    else:
-                        size_str = f"{size_kb / 1024:.1f}MB"
-                    file_list += f"📄 `{info.filename}` ({size_str})\n"
-
-            # Add summary at the top
-            total_mb = total_size / (1024 * 1024)
-            summary = f"**Files:** {file_count} | **Dirs:** {dir_count} | **Total Size:** {total_mb:.2f}MB\n\n"
-            file_list = file_list[:20] + summary + file_list[20:]
-
-            logger.info("zip contains %d files, %d directories, total size: %.2fMB", file_count, dir_count, total_mb)
-
-            # Split message if too long
-            max_length = 4000
-            if len(file_list) <= max_length:
-                await message.edit_text(file_list)
-            else:
-                logger.info("file list too long, uploading as text file")
-                await message.edit_text("__file list too long, uploading as text file__")
-
-                async with NamedTemporaryFile("w", suffix=".txt", encoding="utf-8") as tf:
-                    plain_text = (
-                        file_list.replace("**", "").replace("📁", "DIR:").replace("📄", "FILE:").replace("`", "")
-                    )
-                    await tf.write(plain_text)
-                    await tf.flush()
-                    logger.info("uploading file list to: %s", tf.wrapped.name)
-                    await message.reply_document(tf.wrapped.name, caption="__zip contents__")
+            entries = [(info.is_dir(), info.filename, info.file_size) for info in zipfile.infolist()]
+            file_list = self._build_archive_listing(entries, "Zip")
+            logger.info("zip listing built (%d entries)", len(entries))
+            await self._send_or_upload_text(message, file_list, ".txt", "__zip contents__")
 
     async def untar(self, app: Client, message: Message) -> None:
         """Extract a tar/tar.gz/tar.bz2 file."""
-        if not message.reply_to_message:
-            await message.edit_text("__reply to the file that you want to extract__")
+        if not await self._require_document_reply(message, "extract"):
             return
 
         replied_to_message: Message = cast(Message, message.reply_to_message)
-
-        if not replied_to_message.document:
-            await message.edit_text("__please reply to a tar file__")
-            return
-
         loop: AbstractEventLoop = get_running_loop()
         document: Document = cast(Document, replied_to_message.document)
 
@@ -245,7 +274,6 @@ class MyPlugin(BasePlugin):
                     duration_extract = time.perf_counter() - start_time
                     logger.info("tar extraction took %s seconds", duration_extract)
 
-                    # Get list of extracted files
                     namelist: list[Path] = [Path(d).joinpath(x.name) for x in tar.getmembers()]
                     logger.info("extracted %d items from tar", len(namelist))
 
@@ -266,16 +294,10 @@ class MyPlugin(BasePlugin):
 
     async def untarl(self, app: Client, message: Message) -> None:
         """List contents of a tar file."""
-        if not message.reply_to_message:
-            await message.edit_text("__reply to the file that you want to view__")
+        if not await self._require_document_reply(message, "view"):
             return
 
         replied_to_message: Message = cast(Message, message.reply_to_message)
-
-        if not replied_to_message.document:
-            await message.edit_text("__please reply to a tar file__")
-            return
-
         loop: AbstractEventLoop = get_running_loop()
         document: Document = cast(Document, replied_to_message.document)
 
@@ -298,53 +320,10 @@ class MyPlugin(BasePlugin):
             try:
                 with tarfile.open(f.wrapped.name, "r:*") as tar:
                     logger.info("building detailed file list for tar")
-                    file_list = "**📦 Tar Contents**\n\n"
-                    total_size = 0
-                    file_count = 0
-                    dir_count = 0
-
-                    for member in tar.getmembers():
-                        if member.isdir():
-                            dir_count += 1
-                            file_list += f"📁 `{member.name}`\n"
-                        else:
-                            file_count += 1
-                            size_kb = member.size / 1024
-                            total_size += member.size
-                            if size_kb < 1024:
-                                size_str = f"{size_kb:.1f}KB"
-                            else:
-                                size_str = f"{size_kb / 1024:.1f}MB"
-                            file_list += f"📄 `{member.name}` ({size_str})\n"
-
-                    # Add summary at the top
-                    total_mb = total_size / (1024 * 1024)
-                    summary = f"**Files:** {file_count} | **Dirs:** {dir_count} | **Total Size:** {total_mb:.2f}MB\n\n"
-                    file_list = file_list[:20] + summary + file_list[20:]
-
-                    logger.info(
-                        "tar contains %d files, %d directories, total size: %.2fMB", file_count, dir_count, total_mb
-                    )
-
-                    # Split message if too long
-                    max_length = 4000
-                    if len(file_list) <= max_length:
-                        await message.edit_text(file_list)
-                    else:
-                        logger.info("file list too long, uploading as text file")
-                        await message.edit_text("__file list too long, uploading as text file__")
-
-                        async with NamedTemporaryFile("w", suffix=".txt", encoding="utf-8") as tf:
-                            plain_text = (
-                                file_list.replace("**", "")
-                                .replace("📁", "DIR:")
-                                .replace("📄", "FILE:")
-                                .replace("`", "")
-                            )
-                            await tf.write(plain_text)
-                            await tf.flush()
-                            logger.info("uploading file list to: %s", tf.wrapped.name)
-                            await message.reply_document(tf.wrapped.name, caption="__tar contents__")
+                    entries = [(member.isdir(), member.name, member.size) for member in tar.getmembers()]
+                    file_list = self._build_archive_listing(entries, "Tar")
+                    logger.info("tar listing built (%d entries)", len(entries))
+                    await self._send_or_upload_text(message, file_list, ".txt", "__tar contents__")
             except Exception as e:
                 logger.error("failed to list tar contents: %s", e)
                 await message.edit_text(f"__error listing tar: {e}__")
