@@ -703,13 +703,12 @@ class RM6785Plugin(BasePlugin):
         self.prefixes: list[str] = [".", "/", ",", "!"]
 
     async def _respond(self, app: Client, message: Message, text: str) -> Message:
-        user: User = cast(User, message.from_user)
-        if user.id == (await app.get_me()).id:
-            await message.edit_text(text, parse_mode=ParseMode.MARKDOWN)
-            return message
+        """Thin wrapper around :py:meth:`BasePlugin.respond` using Markdown parse mode.
 
-        reply_message = await message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
-        return reply_message
+        Kept for backward-compatibility with existing call-sites within this plugin;
+        new code should call ``self.respond(app, message, text, parse_mode=...)`` directly.
+        """
+        return await self.respond(app, message, text, parse_mode=ParseMode.MARKDOWN)
 
     @staticmethod
     def run_only_whitelist(whitelists: list[ChatId] = TRIGGER_WHITELISTS):
