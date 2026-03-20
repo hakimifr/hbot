@@ -22,7 +22,10 @@ from typing import final
 
 from jsondb.database import JsonDB
 from pyrogram.client import Client
+from pyrogram.enums import ChatMemberStatus, ParseMode
 from pyrogram.handlers.handler import Handler
+from pyrogram.types import Chat, User
+from pyrogram.types.messages_and_media import Message
 
 from hbot import PERSIST_DIR
 
@@ -84,6 +87,48 @@ class BasePlugin(ABC):
         config.write_database()
 
         config.close()
+
+    # -------------------------------------------------------------------------
+    # Shared helpers -- available to every plugin that inherits BasePlugin
+    # -------------------------------------------------------------------------
+
+    async def respond(
+        self,
+        app: Client,
+        message: Message,
+        text: str,
+        parse_mode: ParseMode | None = None,
+    ) -> Message:
+        """Reply to *message* or edit it if the sender is the bot itself.
+
+        This consolidates the ``_respond`` helpers that previously existed
+        independently in ``moderation.py``, ``rm6785.py``, and ``gemini.py``.
+
+        Args:
+            app: The Pyrogram client.
+            message: The incoming message to respond to.
+            text: The text content of the response.
+            parse_mode: Optional parse mode (e.g. ``ParseMode.MARKDOWN``).
+                If ``None`` the Pyrogram default is used.
+
+        Returns:
+            The sent or edited :class:`~pyrogram.types.Message`.
+        """
+        assert message.from_user
+        assert app.me
+        kwargs = {} if parse_mode is None else {"parse_mode": parse_mode}
+        if message.from_user.id == app.me.id:
+            return await message.edit_text(text, **kwargs)
+        return await message.reply_text(text, **kwargs)
+
+    async def is_user_admin(self, app: Client, chat: Chat, user: User) -> bool:
+        """Return ``True`` if *user* is an administrator or the owner of *chat*.
+
+        This consolidates the identical ``_is_user_admin`` methods that
+        previously existed in both ``moderation.py`` and ``bs.py``.
+        """
+        member = await chat.get_member(user.id)
+        return member.status in {ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER}
 
     @abstractmethod
     def register_handlers(self) -> RegisterHandlersResult | Awaitable[RegisterHandlersResult]:

@@ -17,22 +17,20 @@ import json
 import logging
 import random
 import time
-import typing
-from dataclasses import asdict, dataclass, fields, is_dataclass
+from dataclasses import asdict, dataclass
 from typing import override
 
 from anyio import NamedTemporaryFile
 from jsondb.database import JsonDB
 from pyrogram import filters
 from pyrogram.client import Client
-from pyrogram.enums import ChatMemberStatus
 from pyrogram.handlers.edited_message_handler import EditedMessageHandler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
-from pyrogram.types.user_and_chats import Chat, User
 
 from hbot import PERSIST_DIR
 from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
+from hbot.core.utils import from_dict
 
 SCORE_INITIAL_CONSTANT = 1.0
 SCORE_INCREMENT_CONSTANT = 0.15
@@ -52,36 +50,6 @@ class DataEntry:
     word_list: list[WordEntry]
 
 
-def get_list_inner_type(t) -> type | None:
-    """Returns the inner type of list[X], or None if not a list generic."""
-    origin = typing.get_origin(t)
-    if origin is list:
-        args = typing.get_args(t)
-        if args:
-            return args[0]
-    return None
-
-
-def from_dict[T](cls: type[T], data: dict) -> T:
-    hints = typing.get_type_hints(cls)
-    kwargs = {}
-    for f in fields(cls):
-        value = data[f.name]
-        actual_type = hints[f.name]
-
-        if is_dataclass(actual_type) and isinstance(actual_type, type):
-            # Direct nested dataclass
-            value = from_dict(actual_type, value)
-        else:
-            # Check if it's a list[SomeDataclass]
-            inner = get_list_inner_type(actual_type)
-            if inner is not None and is_dataclass(inner) and isinstance(inner, type):
-                value = [from_dict(inner, item) for item in value]
-
-        kwargs[f.name] = value
-    return cls(**kwargs)
-
-
 class BsPlugin(BasePlugin):
     name: str = "Artificial Intelligence"
     description: str = "Yo homemade AI."
@@ -93,12 +61,6 @@ class BsPlugin(BasePlugin):
     async def ping(self, app: Client, message: Message) -> None:
         logger.debug("ping, pong!")
         await message.edit_text("Pong!")
-
-    async def _is_user_admin(self, app: Client, chat: Chat, user: User) -> bool:
-        member = await chat.get_member(user.id)
-        if member.status in {ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER}:
-            return True
-        return False
 
     async def listener(self, app: Client, message: Message) -> None:
         assert message.chat
@@ -143,7 +105,7 @@ class BsPlugin(BasePlugin):
         assert message.from_user
         assert app.me
 
-        if message.from_user.id != app.me.id and not await self._is_user_admin(app, message.chat, message.from_user):
+        if message.from_user.id != app.me.id and not await self.is_user_admin(app, message.chat, message.from_user):
             await message.reply_text("__you need to be admin!__")
             return
 
@@ -163,7 +125,7 @@ class BsPlugin(BasePlugin):
         assert message.from_user
         assert app.me
 
-        if message.from_user.id != app.me.id and not await self._is_user_admin(app, message.chat, message.from_user):
+        if message.from_user.id != app.me.id and not await self.is_user_admin(app, message.chat, message.from_user):
             await message.reply_text("__you need to be admin!__")
             return
 
@@ -213,7 +175,7 @@ class BsPlugin(BasePlugin):
         assert message.from_user
         assert app.me
 
-        if message.from_user.id != app.me.id and not await self._is_user_admin(app, message.chat, message.from_user):
+        if message.from_user.id != app.me.id and not await self.is_user_admin(app, message.chat, message.from_user):
             await message.reply_text("__you need to be admin!__")
             return
 

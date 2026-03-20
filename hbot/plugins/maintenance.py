@@ -79,6 +79,16 @@ class MaintenancePlugin(BasePlugin):
             raise RuntimeError("cannot find python3 executable")
         os.execl(python_path, "python3", "-m", "hbot")  # noqa: S606
 
+    async def _run_subprocess(self, cmd: list[str]) -> subprocess.CompletedProcess:
+        """Run *cmd* in a thread-pool executor and return the completed process.
+
+        This eliminates the repeated ``partial(subprocess.run, ...) +
+        run_in_executor`` boilerplate that previously appeared in both
+        ``update()`` and ``shell()``.
+        """
+        partial_func = partial(subprocess.run, cmd, capture_output=True)
+        return await asyncio.get_running_loop().run_in_executor(None, partial_func)
+
     async def restart(self, app: Client, message: Message) -> None:
         if update_lock.locked():
             logger.warning("[restart] cannot acquire lock, will not restart")
@@ -100,18 +110,7 @@ class MaintenancePlugin(BasePlugin):
 
             git_path: str = shutil.which("git") or "/usr/bin/git"  # fallback to hardcoded path
 
-            # unfortunately, asyncio.create_subprocess_exec cannot be used here because this bot
-            # uses uvloop, and the aforementioned function is broken with uvloop. we have to resort
-            # to this workaround, which work just as well
-            partial_func = partial(
-                subprocess.run,
-                [git_path, "pull", "--rebase"],
-                capture_output=True,
-            )
-            result: subprocess.CompletedProcess = await asyncio.get_running_loop().run_in_executor(
-                None,
-                partial_func,
-            )
+            result = await self._run_subprocess([git_path, "pull", "--rebase"])
             if result.returncode != 0:
                 logger.error("git pull failed with return code %d: %s", result.returncode, result.stderr.decode())
                 await message.edit_text(f"__error when running git pull__, {str(result.stderr.decode())}")
@@ -125,28 +124,10 @@ class MaintenancePlugin(BasePlugin):
             # Get git diff before restarting
             logger.info("getting git diff after update")
 
-            # First, check if HEAD@{1} exists (requires reflog)
-            check_reflog_partial = partial(
-                subprocess.run,
-                [git_path, "rev-parse", "--verify", "HEAD@{1}"],
-                capture_output=True,
-            )
-            check_result: subprocess.CompletedProcess = await asyncio.get_running_loop().run_in_executor(
-                None,
-                check_reflog_partial,
-            )
+            check_result = await self._run_subprocess([git_path, "rev-parse", "--verify", "HEAD@{1}"])
 
             if check_result.returncode == 0:
-                # Reflog exists, get diff
-                diff_partial = partial(
-                    subprocess.run,
-                    [git_path, "diff", "HEAD@{1}", "HEAD"],
-                    capture_output=True,
-                )
-                diff_result: subprocess.CompletedProcess = await asyncio.get_running_loop().run_in_executor(
-                    None,
-                    diff_partial,
-                )
+                diff_result = await self._run_subprocess([git_path, "diff", "HEAD@{1}", "HEAD"])
                 git_diff = diff_result.stdout.decode() if diff_result.returncode == 0 else "Could not get diff"
                 logger.info("git diff retrieved, length: %d bytes", len(git_diff))
             else:
@@ -163,24 +144,14 @@ class MaintenancePlugin(BasePlugin):
         command: str = cast(str, message.text).removeprefix(".shell").strip()
 
         logger.info("executing shell command: %s", command)
-        partial_func = partial(
-            subprocess.run,
-            [sh_path, "-c", command],  # type: ignore
-            capture_output=True,
-        )
-        result: subprocess.CompletedProcess = await asyncio.get_running_loop().run_in_executor(
-            None,
-            partial_func,
-        )
+        result = await self._run_subprocess([sh_path, "-c", command])
 
         stdout: str = result.stdout.decode()
         stderr: str = result.stderr.decode()
 
         output = f"command: `{command}`\nstdout:```\n{stdout}```\n\nstderr:```\n{stderr}\n```"
 
-        # Telegram message limit is 4096 characters
         max_length = 4000  # Leave some room for formatting
-
         logger.info("command output length: %d characters", len(output))
 
         if len(output) <= max_length:
@@ -202,14 +173,12 @@ class MaintenancePlugin(BasePlugin):
 
     async def getlog(self, app: Client, message: Message) -> None:
         """Get log file with optional head/tail parameters."""
-        # Parse command for head/tail parameters
         command_text: str = cast(str, message.text).strip()
         parts = command_text.split()
 
         head_lines: int | None = None
         tail_lines: int | None = None
 
-        # Parse arguments like: .getlog --head 100 or .getlog --tail 50
         i = 1
         while i < len(parts):
             if parts[i] == "--head" and i + 1 < len(parts):
@@ -247,7 +216,6 @@ class MaintenancePlugin(BasePlugin):
         async with await log_file.open("r", encoding="utf-8") as f:
             logger.info("open succeeds, reading log file")
 
-            # Read all lines first if we need to apply head/tail
             if head_lines or tail_lines:
                 logger.info("reading all lines for head/tail processing")
                 all_lines = await f.readlines()
@@ -259,7 +227,6 @@ class MaintenancePlugin(BasePlugin):
                     all_lines = all_lines[-tail_lines:]
                     logger.info("keeping last %d lines", tail_lines)
 
-                # Write filtered lines to temp file for upload
                 async with NamedTemporaryFile("w", suffix="_filtered.log", encoding="utf-8") as ff:
                     for line in all_lines:
                         await ff.write(line)
@@ -277,7 +244,6 @@ class MaintenancePlugin(BasePlugin):
         """Delete or trim the log file."""
         command_text: str = cast(str, message.text).strip()
 
-        # Check if --trim flag is provided
         trim_mode = "--trim" in command_text
 
         log_file: Path = Path("bot.log")
@@ -296,7 +262,6 @@ class MaintenancePlugin(BasePlugin):
                 async with await log_file.open("r", encoding="utf-8") as f:
                     all_lines = await f.readlines()
 
-                # Keep last LOG_TRIM_LINES lines
                 lines_to_keep = all_lines[-LOG_TRIM_LINES:] if len(all_lines) > LOG_TRIM_LINES else all_lines
                 logger.info("keeping %d lines out of %d", len(lines_to_keep), len(all_lines))
 
@@ -367,7 +332,6 @@ class MaintenancePlugin(BasePlugin):
                         update_text,
                     )
 
-                    # Upload git diff if available
                     if git_diff and len(git_diff) > 0:
                         logger.info("uploading git diff file after update")
                         try:

@@ -27,7 +27,7 @@ from pyrogram.client import Client
 from pyrogram.enums import ChatMemberStatus, ParseMode
 from pyrogram.errors import FloodWait, RPCError
 from pyrogram.handlers.message_handler import MessageHandler
-from pyrogram.types import Chat, ChatAdministratorRights, ChatMember, User
+from pyrogram.types import Chat, ChatAdministratorRights, ChatMember
 from pyrogram.types.messages_and_media import Message
 
 from hbot import PERSIST_DIR
@@ -61,20 +61,6 @@ class ModPlugin(BasePlugin):
             return True
         return False
 
-    async def _is_user_admin(self, app: Client, chat: Chat, user: User) -> bool:
-        member = await chat.get_member(user.id)
-        if member.status in {ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER}:
-            return True
-        return False
-
-    async def _respond(self, app: Client, message: Message, text: str) -> Message:
-        assert message.from_user
-        assert app.me
-        if message.from_user.id == app.me.id:
-            return await message.edit_text(text)
-        else:
-            return await message.reply_text(text)
-
     async def purge(self, app: Client, message: Message) -> None:
         assert message.from_user
         assert message.chat
@@ -91,14 +77,14 @@ class ModPlugin(BasePlugin):
             logger.info("purging silently")
 
         if not message.reply_to_message:
-            await self._respond(app, message, "__reply to a message!__")
+            await self.respond(app, message, "__reply to a message!__")
             return
 
         chat = cast(Chat, message.chat)
         message.text = cast(str, message.text)
 
         if chat.is_forum and "--force" not in message.text:
-            await self._respond(
+            await self.respond(
                 app,
                 message,
                 "__using this command in topic-enabled chat is a bad idea, use --force to do it anyway.__",
@@ -127,7 +113,7 @@ class ModPlugin(BasePlugin):
             if message.from_user.id != app.me.id:
                 app.loop.create_task(message.delete())
             amount_of_msgs = len(range(message.reply_to_message.id, message.id)) + 1
-            await self._respond(app, message, f"__purged! {amount_of_msgs} messages purged in {time_delta} seconds__")
+            await self.respond(app, message, f"__purged! {amount_of_msgs} messages purged in {time_delta} seconds__")
         else:
             await message.delete()
 
@@ -187,12 +173,10 @@ class ModPlugin(BasePlugin):
         user_id = message.reply_to_message.from_user.id
 
         try:
-            # Get full user information
             logger.info("fetching full user data for user ID: %s", user_id)
             user = await app.get_users(user_id)
 
-            # Build info string
-            info_text = "**👤 User Information**\n\n"
+            info_text = "**\U0001f464 User Information**\n\n"
             info_text += f"**ID:** `{user.id}`\n"
             info_text += f"**First Name:** {user.first_name}\n"
 
@@ -223,7 +207,6 @@ class ModPlugin(BasePlugin):
             if user.photo:
                 info_text += "**Has Profile Photo:** Yes\n"
 
-            # Get bio if available (requires fetching chat info)
             try:
                 logger.info("attempting to fetch bio for user %s", user_id)
                 chat = await app.get_chat(user_id)
@@ -233,7 +216,6 @@ class ModPlugin(BasePlugin):
             except Exception as e:
                 logger.warning("could not fetch bio: %s", e)
 
-            # Try to get common chats count
             try:
                 logger.info("attempting to get common chats count for user %s", user_id)
                 common_chats = await app.get_common_chats(user_id)
@@ -251,11 +233,10 @@ class ModPlugin(BasePlugin):
 
     # TODO: check if this is PM and forbid this command from running
     async def kick(self, app: Client, message: Message) -> None:
-        if not await self._is_user_admin(app, message.chat, message.from_user):  # type: ignore
+        if not await self.is_user_admin(app, message.chat, message.from_user):  # type: ignore
             await message.edit_text("__you are not an admin!__")
             return
 
-        # TODO: allow passing the user's id
         if not message.reply_to_message:
             await message.edit_text("__please reply to a message__")
             return
@@ -437,7 +418,7 @@ class ModPlugin(BasePlugin):
         if not await self._is_myself_admin(app, message.chat.id):
             await message.edit_text("__I am not admin!__")
             return
-        if not await self._is_user_admin(app, message.chat, message.from_user):
+        if not await self.is_user_admin(app, message.chat, message.from_user):
             await message.edit_text("__you're not admin!__")
             return
         if not message.reply_to_message:
@@ -476,7 +457,7 @@ class ModPlugin(BasePlugin):
 
         block_db.data.update({chat_id_str: asdict(entry)})
 
-        await self._respond(
+        await self.respond(
             app,
             message,
             f"__added {doc_type}{' pack' if block_whole_pack else ''} to blocklist.__",
@@ -492,7 +473,7 @@ class ModPlugin(BasePlugin):
         if not await self._is_myself_admin(app, message.chat.id):
             await message.edit_text("__I am not admin!__")
             return
-        if not await self._is_user_admin(app, message.chat, message.from_user):
+        if not await self.is_user_admin(app, message.chat, message.from_user):
             await message.edit_text("__you're not admin!__")
             return
         if not message.reply_to_message:
@@ -514,7 +495,7 @@ class ModPlugin(BasePlugin):
         chat_id_str = str(chat_id)
 
         if not block_db.data.get(chat_id_str):
-            await self._respond(app, message, "__nothing is blocked here.__")
+            await self.respond(app, message, "__nothing is blocked here.__")
             return
 
         entry = BlockEntry(**cast(dict, block_db.data.get(chat_id_str)))
@@ -533,9 +514,9 @@ class ModPlugin(BasePlugin):
                 raise AssertionError("unreachable")
             block_db.data.update({chat_id_str: asdict(entry)})
         except ValueError:
-            await self._respond(app, message, "__that wasn't in blocklist!__")
+            await self.respond(app, message, "__that wasn't in blocklist!__")
         else:
-            await self._respond(
+            await self.respond(
                 app,
                 message,
                 f"__removed {doc_type}{' pack' if unblock_whole_pack else ''} from blocklist.__",
@@ -570,7 +551,7 @@ class ModPlugin(BasePlugin):
         if message.animation and message.animation.file_unique_id not in entry.blocked_gifs:
             return
 
-        if await self._is_user_admin(app, message.chat, message.from_user):
+        if await self.is_user_admin(app, message.chat, message.from_user):
             logger.info("ignoring blocked sticker/gif from admin")
             return
 
