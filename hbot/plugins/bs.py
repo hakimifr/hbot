@@ -107,10 +107,6 @@ class BsPlugin(BasePlugin):
 
     # --- handlers ---------------------------------------------------------------
 
-    async def ping(self, app: Client, message: Message) -> None:
-        logger.debug("ping, pong!")
-        await message.edit_text("Pong!")
-
     async def listener(self, app: Client, message: Message) -> None:
         assert message.chat
         assert message.chat.id
@@ -259,7 +255,7 @@ class BsPlugin(BasePlugin):
         # Build a filter that matches any command this plugin handles, so the
         # passive listener never ingests bot commands as training words.
         command_filter = filters.command(
-            ["enablebs", "disablebs", "generatebs", "gbs", "getchatbs", "gcbs", "trainfromhistory", "tfh", "ping"],
+            ["enablebs", "disablebs", "generatebs", "gbs", "getchatbs", "gcbs", "trainfromhistory", "tfh"],
             prefixes=self.prefixes,
         )
         listener_filter = (filters.text | filters.caption) & ~command_filter
@@ -267,7 +263,6 @@ class BsPlugin(BasePlugin):
         return RegisterHandlersResult(
             group=5,
             handlers=[
-                MessageHandler(self.ping, filters.command("ping", prefixes=self.prefixes)),
                 MessageHandler(self.enable_bs, filters.command("enablebs", prefixes=self.prefixes)),
                 MessageHandler(self.disable_bs, filters.command("disablebs", prefixes=self.prefixes)),
                 MessageHandler(self.generate_bs, filters.command(["generatebs", "gbs"], prefixes=self.prefixes)),
