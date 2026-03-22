@@ -1,1 +1,281 @@
-IyBTUERYLUxpY2Vuc2UtSWRlbnRpZmllcjogR1BMLTMuMC1vbmx5CiMKIyBUaGlzIHByb2dyYW0gaXMgZnJlZSBzb2Z0d2FyZTogeW91IGNhbiByZWRpc3RyaWJ1dGUgaXQgYW5kL29yIG1vZGlmeQojIGl0IHVuZGVyIHRoZSB0ZXJtcyBvZiB0aGUgR05VIEdlbmVyYWwgUHVibGljIExpY2Vuc2UgYXMgcHVibGlzaGVkIGJ5CiMgdGhlIEZyZWUgU29mdHdhcmUgRm91bmRhdGlvbiwgdmVyc2lvbiAzIG9mIHRoZSBMaWNlbnNlLgojCiMgVGhpcyBwcm9ncmFtIGlzIGRpc3RyaWJ1dGVkIGluIHRoZSBob3BlIHRoYXQgaXQgd2lsbCBiZSB1c2VmdWwsCiMgYnV0IFdJVEhPVVQgQU5ZIFdBUlJBTlRZOyB3aXRob3V0IGV2ZW4gdGhlIGltcGxpZWQgd2FycmFudHkgb2YKIyBNRVJDSEFOVEFCSUxJVFkgb3IgRklUTkVTUyBGT1IgQSBQQVJUSUNVTEFSIFBVUlBPU0UuICBTZWUgdGhlCiMgR05VIEdlbmVyYWwgUHVibGljIExpY2Vuc2UgZm9yIG1vcmUgZGV0YWlscy4KIwojIFlvdSBzaG91bGQgaGF2ZSByZWNlaXZlZCBhIGNvcHkgb2YgdGhlIEdOVSBHZW5lcmFsIFB1YmxpYyBMaWNlbnNlCiMgYWxvbmcgd2l0aCB0aGlzIHByb2dyYW0uICBJZiBub3QsIHNlZSA8aHR0cHM6Ly93d3cuZ251Lm9yZy9saWNlbnNlcy8+LgojCiMgQ29weXJpZ2h0IChjKSAyMDI2LCBGaXJkYXVzIEhha2ltaSA8aGFraW1pZmlyZGF1czk0NEBnbWFpbC5jb20+CmltcG9ydCBqc29uCmltcG9ydCBsb2dnaW5nCmltcG9ydCByYW5kb20KaW1wb3J0IHRpbWUKZnJvbSBmdW5jdG9vbHMgaW1wb3J0IGNhY2hlZF9wcm9wZXJ0eQpmcm9tIHR5cGluZyBpbXBvcnQgb3ZlcnJpZGUKCmZyb20gYW55aW8gaW1wb3J0IE5hbWVkVGVtcG9yYXJ5RmlsZQpmcm9tIGpzb25kYi5kYXRhYmFzZSBpbXBvcnQgSnNvbkRCCmZyb20gcHlyb2dyYW0gaW1wb3J0IGZpbHRlcnMKZnJvbSBweXJvZ3JhbS5jbGllbnQgaW1wb3J0IENsaWVudApmcm9tIHB5cm9ncmFtLmhhbmRsZXJzLmVkaXRlZF9tZXNzYWdlX2hhbmRsZXIgaW1wb3J0IEVkaXRlZE1lc3NhZ2VIYW5kbGVyCmZyb20gcHlyb2dyYW0uaGFuZGxlcnMubWVzc2FnZV9oYW5kbGVyIGltcG9ydCBNZXNzYWdlSGFuZGxlcgpmcm9tIHB5cm9ncmFtLnR5cGVzLm1lc3NhZ2VzX2FuZF9tZWRpYSBpbXBvcnQgTWVzc2FnZQoKZnJvbSBoYm90IGltcG9ydCBQRVJTSVNUX0RJUgpmcm9tIGhib3QuY29yZS5iYXNlX3BsdWdpbiBpbXBvcnQgQmFzZVBsdWdpbiwgUmVnaXN0ZXJIYW5kbGVyc1Jlc3VsdAoKU0NPUkVfSU5JVElBTF9DT05TVEFOVCA9IDEuMApTQ09SRV9JTkNSRU1FTlRfQ09OU1RBTlQgPSAwLjE1Cgpsb2dnZXIgPSBsb2dnaW5nLmdldExvZ2dlcihfX25hbWVfXykKCgpjbGFzcyBCc1BsdWdpbihCYXNlUGx1Z2luKToKICAgIG5hbWU6IHN0ciA9ICJBcnRpZmljaWFsIEludGVsbGlnZW5jZSIKICAgIGRlc2NyaXB0aW9uOiBzdHIgPSAiWW8gaG9tZW1hZGUgQUkuIgoKICAgIGRlZiBfX2luaXRfXyhzZWxmLCBhcHA6IENsaWVudCkgLT4gTm9uZToKICAgICAgICBzZWxmLmFwcDogQ2xpZW50ID0gYXBwCgogICAgIyAtLS0gbGF6eS1sb2FkZWQgZGF0YWJhc2UgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgogICAgQGNhY2hlZF9wcm9wZXJ0eQogICAgZGVmIF9kYihzZWxmKSAtPiBKc29uREI6CiAgICAgICAgIiIiSW5pdGlhbGlzZSB0aGUgSnNvbkRCIGluc3RhbmNlIG9uIGZpcnN0IGFjY2VzcyByYXRoZXIgdGhhbiBhdCBpbXBvcnQgdGltZS4iIiIKICAgICAgICByZXR1cm4gSnNvbkRCKF9fbmFtZV9fLCBQRVJTSVNUX0RJUikKCiAgICAjIC0tLSB3aGl0ZWxpc3QgaGVscGVycyAobm8gZHVwbGljYXRlIGluLW1lbW9yeSBjb3B5KSAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCiAgICBkZWYgX2dldF93aGl0ZWxpc3Qoc2VsZikgLT4gbGlzdFtpbnRdOgogICAgICAgIHJldHVybiBzZWxmLl9kYi5kYXRhLmdldCgid2hpdGVsaXN0IiwgW10pCgogICAgZGVmIF9zZXRfd2hpdGVsaXN0KHNlbGYsIHdoaXRlbGlzdDogbGlzdFtpbnRdKSAtPiBOb25lOgogICAgICAgIHNlbGYuX2RiLmRhdGEudXBkYXRlKHsid2hpdGVsaXN0Ijogd2hpdGVsaXN0fSkKCiAgICAjIC0tLSB3b3JkLXNjb3JlIGhlbHBlcnMgKHBsYWluIGRpY3Rbc3RyLCBmbG9hdF0gcGVyIGNoYXQpIC0tLS0tLS0tLS0tLS0tLS0tLS0KCiAgICBkZWYgX2dldF9zY29yZXMoc2VsZiwgY2hhdF9pZDogaW50KSAtPiBkaWN0W3N0ciwgZmxvYXRdOgogICAgICAgICIiIlJldHVybiB0aGUgd29yZC1zY29yZSBtYXBwaW5nIGZvciAqY2hhdF9pZCogKGVtcHR5IGRpY3QgaWYgdW5zZWVuKS4KCiAgICAgICAgQWxzbyBwZXJmb3JtcyBhIG9uZS10aW1lIGNsZWFudXAgb2YgdGhlIGxlZ2FjeSAnd29yZF9saXN0JyBrZXkgaWYgaXQKICAgICAgICBleGlzdHMgaW5zaWRlIGEgY2hhdCdzIGRhdGEgYmxvYiwgcHJldmVudGluZyBUeXBlRXJyb3IgY3Jhc2hlcyB3aGVuCiAgICAgICAgaXRzIGxpc3QgdmFsdWUgZW5kcyB1cCBtaXhlZCBpbiB3aXRoIGZsb2F0IHNjb3Jlcy4KICAgICAgICAiIiIKICAgICAgICByYXc6IGRpY3QgPSBkaWN0KHNlbGYuX2RiLmRhdGEuZ2V0KHN0cihjaGF0X2lkKSwge30pKQoKICAgICAgICAjIE9uZS10aW1lIG1pZ3JhdGlvbjogZHJvcCB0aGUgb2xkICd3b3JkX2xpc3QnIGtleSBsZWZ0IG92ZXIgZnJvbSB0aGUKICAgICAgICAjIHByZS1yZWZhY3RvciBEYXRhRW50cnkvV29yZEVudHJ5IHNjaGVtYS4KICAgICAgICBpZiAid29yZF9saXN0IiBpbiByYXc6CiAgICAgICAgICAgIGxvZ2dlci53YXJuaW5nKAogICAgICAgICAgICAgICAgImNoYXQgJWQ6IHJlbW92aW5nIGxlZ2FjeSAnd29yZF9saXN0JyBrZXkgZnJvbSBzY29yZXMgZGljdCIsIGNoYXRfaWQKICAgICAgICAgICAgKQogICAgICAgICAgICByYXcucG9wKCJ3b3JkX2xpc3QiKQogICAgICAgICAgICBzZWxmLl9kYi5kYXRhLnVwZGF0ZSh7c3RyKGNoYXRfaWQpOiByYXd9KQoKICAgICAgICAjIERlZmVuc2l2ZWx5IGZpbHRlciBvdXQgYW55IHJlbWFpbmluZyBub24tbnVtZXJpYyB2YWx1ZXMgc28gYSBzdGFsZSBEQgogICAgICAgICMgY2FuIG5ldmVyIGNhdXNlIGEgVHlwZUVycm9yIGluIGdlbmVyYXRlX2JzLgogICAgICAgIHJldHVybiB7azogdiBmb3IgaywgdiBpbiByYXcuaXRlbXMoKSBpZiBpc2luc3RhbmNlKHYsIChpbnQsIGZsb2F0KSl9CgogICAgZGVmIF9zZXRfc2NvcmVzKHNlbGYsIGNoYXRfaWQ6IGludCwgc2NvcmVzOiBkaWN0W3N0ciwgZmxvYXRdKSAtPiBOb25lOgogICAgICAgIHNlbGYuX2RiLmRhdGEudXBkYXRlKHtzdHIoY2hhdF9pZCk6IHNjb3Jlc30pCgogICAgIyAtLS0gaW50ZXJuYWwgdXBkYXRlIChzaGFyZWQgYnkgbGlzdGVuZXIgYW5kIHRyYWluX2Zyb21faGlzdG9yeSkgLS0tLS0tLS0tLS0tCgogICAgZGVmIF9hcHBseV90ZXh0KHNlbGYsIHNjb3JlczogZGljdFtzdHIsIGZsb2F0XSwgdGV4dDogc3RyKSAtPiBOb25lOgogICAgICAgICIiIlVwZGF0ZSAqc2NvcmVzKiBpbi1wbGFjZSBmcm9tIHRoZSB3b3JkcyBpbiAqdGV4dCouIiIiCiAgICAgICAgZm9yIHdvcmQgaW4gdGV4dC5yZXBsYWNlKCJcbiIsICIgIikuc3BsaXQoIiAiKToKICAgICAgICAgICAgaWYgbm90IHdvcmQ6CiAgICAgICAgICAgICAgICBjb250aW51ZQogICAgICAgICAgICBpZiB3b3JkIGluIHNjb3JlczoKICAgICAgICAgICAgICAgIGxvZ2dlci5pbmZvKAogICAgICAgICAgICAgICAgICAgICJpbmNyZW1lbnRpbmcgc2NvcmUgZm9yIHdvcmQgJXMgZnJvbSAlZiB0byAlZiIsCiAgICAgICAgICAgICAgICAgICAgd29yZCwKICAgICAgICAgICAgICAgICAgICBzY29yZXNbd29yZF0sCiAgICAgICAgICAgICAgICAgICAgc2NvcmVzW3dvcmRdICsgU0NPUkVfSU5DUkVNRU5UX0NPTlNUQU5ULAogICAgICAgICAgICAgICAgKQogICAgICAgICAgICAgICAgc2NvcmVzW3dvcmRdICs9IFNDT1JFX0lOQ1JFTUVOVF9DT05TVEFOVAogICAgICAgICAgICBlbHNlOgogICAgICAgICAgICAgICAgbG9nZ2VyLmluZm8oImNyZWF0aW5nIG5ldyBlbnRyeSBmb3Igd29yZCAlcyB3aXRoIHNjb3JlIG9mICVmIiwgd29yZCwgU0NPUkVfSU5JVElBTF9DT05TVEFOVCkKICAgICAgICAgICAgICAgIHNjb3Jlc1t3b3JkXSA9IFNDT1JFX0lOSVRJQUxfQ09OU1RBTlQKCiAgICAjIC0tLSBoYW5kbGVycyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCiAgICBhc3luYyBkZWYgcGluZyhzZWxmLCBhcHA6IENsaWVudCwgbWVzc2FnZTogTWVzc2FnZSkgLT4gTm9uZToKICAgICAgICBsb2dnZXIuZGVidWcoInBpbmcsIHBvbmchIikKICAgICAgICBhd2FpdCBtZXNzYWdlLmVkaXRfdGV4dCgiUG9uZyEiKQoKICAgIGFzeW5jIGRlZiBsaXN0ZW5lcihzZWxmLCBhcHA6IENsaWVudCwgbWVzc2FnZTogTWVzc2FnZSkgLT4gTm9uZToKICAgICAgICBhc3NlcnQgbWVzc2FnZS5jaGF0CiAgICAgICAgYXNzZXJ0IG1lc3NhZ2UuY2hhdC5pZAoKICAgICAgICB0ZXh0OiBzdHIKICAgICAgICBpZiBtZXNzYWdlLmNhcHRpb246CiAgICAgICAgICAgIHRleHQgPSBtZXNzYWdlLmNhcHRpb24KICAgICAgICBlbGlmIG1lc3NhZ2UudGV4dDoKICAgICAgICAgICAgdGV4dCA9IG1lc3NhZ2UudGV4dAogICAgICAgIGVsc2U6CiAgICAgICAgICAgIHJldHVybgoKICAgICAgICBpZiBtZXNzYWdlLmNoYXQuaWQgbm90IGluIHNlbGYuX2dldF93aGl0ZWxpc3QoKToKICAgICAgICAgICAgbG9nZ2VyLmluZm8oImNoYXQgJWQgaXMgbm90IGluIHdoaXRlbGlzdCwgaWdub3JpbmciLCBtZXNzYWdlLmNoYXQuaWQpCiAgICAgICAgICAgIHJldHVybgoKICAgICAgICBsb2dnZXIuaW5mbygiY2hhdCAlZCBpcyBpbiB3aGl0ZWxpc3QsIHByb2Nlc3NpbmciLCBtZXNzYWdlLmNoYXQuaWQpCgogICAgICAgIHNjb3JlcyA9IHNlbGYuX2dldF9zY29yZXMobWVzc2FnZS5jaGF0LmlkKQogICAgICAgIHNlbGYuX2FwcGx5X3RleHQoc2NvcmVzLCB0ZXh0KQogICAgICAgIHNlbGYuX3NldF9zY29yZXMobWVzc2FnZS5jaGF0LmlkLCBzY29yZXMpCgogICAgYXN5bmMgZGVmIGVuYWJsZV9icyhzZWxmLCBhcHA6IENsaWVudCwgbWVzc2FnZTogTWVzc2FnZSkgLT4gTm9uZToKICAgICAgICBhc3NlcnQgbWVzc2FnZS5jaGF0CiAgICAgICAgYXNzZXJ0IG1lc3NhZ2UuY2hhdC5pZAogICAgICAgIGFzc2VydCBtZXNzYWdlLmZyb21fdXNlcgogICAgICAgIGFzc2VydCBhcHAubWUKCiAgICAgICAgaWYgbWVzc2FnZS5mcm9tX3VzZXIuaWQgIT0gYXBwLm1lLmlkIGFuZCBub3QgYXdhaXQgc2VsZi5pc191c2VyX2FkbWluKGFwcCwgbWVzc2FnZS5jaGF0LCBtZXNzYWdlLmZyb21fdXNlcik6CiAgICAgICAgICAgIGF3YWl0IG1lc3NhZ2UucmVwbHlfdGV4dCgiX195b3UgbmVlZCB0byBiZSBhZG1pbiFfXyIpCiAgICAgICAgICAgIHJldHVybgoKICAgICAgICB3aGl0ZWxpc3QgPSBzZWxmLl9nZXRfd2hpdGVsaXN0KCkKICAgICAgICBpZiBtZXNzYWdlLmNoYXQuaWQgaW4gd2hpdGVsaXN0OgogICAgICAgICAgICBsb2dnZXIuaW5mbygid2lsbCBub3QgZW5hYmxlIGJzIGZvciBjaGF0ICVkOyBhbHJlYWR5IGVuYWJsZWQiLCBtZXNzYWdlLmNoYXQuaWQpCiAgICAgICAgICAgIGF3YWl0IG1lc3NhZ2UucmVwbHlfdGV4dCgiX19hbHJlYWR5IGVuYWJsZWQgZm9yIHRoaXMgY2hhdF9fIikKICAgICAgICAgICAgcmV0dXJuCgogICAgICAgIGxvZ2dlci5pbmZvKCJlbmFibGluZyBicyBmb3IgY2hhdCAlZCIsIG1lc3NhZ2UuY2hhdC5pZCkKICAgICAgICB3aGl0ZWxpc3QuYXBwZW5kKG1lc3NhZ2UuY2hhdC5pZCkKICAgICAgICBzZWxmLl9zZXRfd2hpdGVsaXN0KHdoaXRlbGlzdCkKICAgICAgICBhd2FpdCBtZXNzYWdlLnJlcGx5X3RleHQoIl9fYnMgaXMgbm93IGVuYWJsZWQgZm9yIHRoaXMgY2hhdF9fIikKCiAgICBhc3luYyBkZWYgZGlzYWJsZV9icyhzZWxmLCBhcHA6IENsaWVudCwgbWVzc2FnZTogTWVzc2FnZSkgLT4gTm9uZToKICAgICAgICBhc3NlcnQgbWVzc2FnZS5jaGF0CiAgICAgICAgYXNzZXJ0IG1lc3NhZ2UuY2hhdC5pZAogICAgICAgIGFzc2VydCBtZXNzYWdlLmZyb21fdXNlcgogICAgICAgIGFzc2VydCBhcHAubWUKCiAgICAgICAgaWYgbWVzc2FnZS5mcm9tX3VzZXIuaWQgIT0gYXBwLm1lLmlkIGFuZCBub3QgYXdhaXQgc2VsZi5pc191c2VyX2FkbWluKGFwcCwgbWVzc2FnZS5jaGF0LCBtZXNzYWdlLmZyb21fdXNlcik6CiAgICAgICAgICAgIGF3YWl0IG1lc3NhZ2UucmVwbHlfdGV4dCgiX195b3UgbmVlZCB0byBiZSBhZG1pbiFfXyIpCiAgICAgICAgICAgIHJldHVybgoKICAgICAgICB3aGl0ZWxpc3QgPSBzZWxmLl9nZXRfd2hpdGVsaXN0KCkKICAgICAgICBpZiBtZXNzYWdlLmNoYXQuaWQgbm90IGluIHdoaXRlbGlzdDoKICAgICAgICAgICAgbG9nZ2VyLmluZm8oIndpbGwgbm90IGRpc2FibGUgYnMgZm9yIGNoYXQgJWQ7IGFscmVhZHkgZGlzYWJsZWQiLCBtZXNzYWdlLmNoYXQuaWQpCiAgICAgICAgICAgIGF3YWl0IG1lc3NhZ2UucmVwbHlfdGV4dCgiX19hbHJlYWR5IGRpc2FibGVkIGZvciB0aGlzIGNoYXRfXyIpCiAgICAgICAgICAgIHJldHVybgoKICAgICAgICBsb2dnZXIuaW5mbygiZGlzYWJsaW5nIGJzIGZvciBjaGF0ICVkIiwgbWVzc2FnZS5jaGF0LmlkKQogICAgICAgIHdoaXRlbGlzdC5yZW1vdmUobWVzc2FnZS5jaGF0LmlkKQogICAgICAgIHNlbGYuX3NldF93aGl0ZWxpc3Qod2hpdGVsaXN0KQogICAgICAgIGF3YWl0IG1lc3NhZ2UucmVwbHlfdGV4dCgiX19icyBpcyBub3cgZGlzYWJsZWQgZm9yIHRoaXMgY2hhdF9fIikKCiAgICBhc3luYyBkZWYgZ2VuZXJhdGVfYnMoc2VsZiwgYXBwOiBDbGllbnQsIG1lc3NhZ2U6IE1lc3NhZ2UpIC0+IE5vbmU6CiAgICAgICAgYXNzZXJ0IG1lc3NhZ2UuY2hhdAogICAgICAgIGFzc2VydCBtZXNzYWdlLmNoYXQuaWQKCiAgICAgICAgYnNfd29yZF9jb3VudCA9IHJhbmRvbS5yYW5kaW50KDIwLCA1MCkgICMgbm9xYTogUzMxMQogICAgICAgIHNjb3JlcyA9IHNlbGYuX2dldF9zY29yZXMobWVzc2FnZS5jaGF0LmlkKQoKICAgICAgICBpZiBub3Qgc2NvcmVzOgogICAgICAgICAgICBhd2FpdCBtZXNzYWdlLnJlcGx5X3RleHQoIl9fbm8gZGF0YSBmb3IgdGhpcyBjaGF0IHlldCFfXyIpCiAgICAgICAgICAgIHJldHVybgoKICAgICAgICB3b3Jkcywgd2VpZ2h0cyA9IHppcCgqc2NvcmVzLml0ZW1zKCkpCiAgICAgICAgc2VudGVuY2Vfd29yZHMgPSByYW5kb20uY2hvaWNlcyhsaXN0KHdvcmRzKSwgbGlzdCh3ZWlnaHRzKSwgaz1ic193b3JkX2NvdW50KSAgIyBub3FhOiBTMzExCiAgICAgICAgc2VudGVuY2UgPSAiICIuam9pbihzZW50ZW5jZV93b3JkcykKICAgICAgICBsb2dnZXIuaW5mbygiY29uc3RydWN0ZWQgYnMgc2VudGVuY2UgZm9yIGNoYXQgJWQgaXM6ICVzIiwgbWVzc2FnZS5jaGF0LmlkLCBzZW50ZW5jZSkKICAgICAgICBhd2FpdCBtZXNzYWdlLnJlcGx5X3RleHQoZiJfX3tzZW50ZW5jZX1fXyIpCgogICAgYXN5bmMgZGVmIGdldF9jaGF0X2JzKHNlbGYsIGFwcDogQ2xpZW50LCBtZXNzYWdlOiBNZXNzYWdlKSAtPiBOb25lOgogICAgICAgIGFzc2VydCBtZXNzYWdlLmNoYXQKICAgICAgICBhc3NlcnQgbWVzc2FnZS5jaGF0LmlkCgogICAgICAgIHNjb3JlcyA9IHNlbGYuX2dldF9zY29yZXMobWVzc2FnZS5jaGF0LmlkKQoKICAgICAgICBhc3luYyB3aXRoIE5hbWVkVGVtcG9yYXJ5RmlsZSgidysiLCBzdWZmaXg9Ii5qc29uIikgYXMgZjoKICAgICAgICAgICAgYXdhaXQgZi53cml0ZShqc29uLmR1bXBzKHNjb3JlcywgaW5kZW50PTIpKQogICAgICAgICAgICBhd2FpdCBmLmZsdXNoKCkKICAgICAgICAgICAgYXdhaXQgbWVzc2FnZS5yZXBseV9kb2N1bWVudChmLndyYXBwZWQubmFtZSkKCiAgICBhc3luYyBkZWYgdHJhaW5fZnJvbV9oaXN0b3J5KHNlbGYsIGFwcDogQ2xpZW50LCBtZXNzYWdlOiBNZXNzYWdlLCBsaW1pdDogaW50ID0gMCkgLT4gTm9uZToKICAgICAgICAiIiJUcmFpbiBmcm9tIHRoZSBjaGF0J3MgbWVzc2FnZSBoaXN0b3J5LgoKICAgICAgICBBcmdzOgogICAgICAgICAgICBhcHA6IFRoZSBQeXJvZ3JhbSBjbGllbnQuCiAgICAgICAgICAgIG1lc3NhZ2U6IFRoZSB0cmlnZ2VyaW5nIG1lc3NhZ2UuCiAgICAgICAgICAgIGxpbWl0OiBNYXhpbXVtIG51bWJlciBvZiBoaXN0b3JpY2FsIG1lc3NhZ2VzIHRvIHByb2Nlc3MuCiAgICAgICAgICAgICAgICAgICAgMCAoZGVmYXVsdCkgbWVhbnMgbm8gbGltaXQg4oCUIHByb2Nlc3MgdGhlIGVudGlyZSBoaXN0b3J5LgogICAgICAgICIiIgogICAgICAgIGFzc2VydCBtZXNzYWdlLmNoYXQKICAgICAgICBhc3NlcnQgbWVzc2FnZS5jaGF0LmlkCiAgICAgICAgYXNzZXJ0IG1lc3NhZ2UuZnJvbV91c2VyCiAgICAgICAgYXNzZXJ0IGFwcC5tZQoKICAgICAgICBpZiBtZXNzYWdlLmZyb21fdXNlci5pZCAhPSBhcHAubWUuaWQgYW5kIG5vdCBhd2FpdCBzZWxmLmlzX3VzZXJfYWRtaW4oYXBwLCBtZXNzYWdlLmNoYXQsIG1lc3NhZ2UuZnJvbV91c2VyKToKICAgICAgICAgICAgYXdhaXQgbWVzc2FnZS5yZXBseV90ZXh0KCJfX3lvdSBuZWVkIHRvIGJlIGFkbWluIV9fIikKICAgICAgICAgICAgcmV0dXJuCgogICAgICAgICMgUGFyc2Ugb3B0aW9uYWwgaW5saW5lIGxpbWl0OiBlLmcuICIvdGZoIDUwMDAiCiAgICAgICAgaWYgbWVzc2FnZS50ZXh0OgogICAgICAgICAgICBwYXJ0cyA9IG1lc3NhZ2UudGV4dC5zdHJpcCgpLnNwbGl0KCkKICAgICAgICAgICAgaWYgbGVuKHBhcnRzKSA+PSAyOgogICAgICAgICAgICAgICAgdHJ5OgogICAgICAgICAgICAgICAgICAgIGxpbWl0ID0gaW50KHBhcnRzWzFdKQogICAgICAgICAgICAgICAgZXhjZXB0IFZhbHVlRXJyb3I6CiAgICAgICAgICAgICAgICAgICAgcGFzcwoKICAgICAgICBsb2dnZXIuaW5mbygiLS0tIFRSQUlOSU5HIEZST00gQ0hBVCBISVNUT1JZIE9GICVkIChsaW1pdD0lZCkgLS0tIiwgbWVzc2FnZS5jaGF0LmlkLCBsaW1pdCkKICAgICAgICBsaW1pdF9zdHIgPSBzdHIobGltaXQpIGlmIGxpbWl0IGVsc2UgIm5vIGxpbWl0IgogICAgICAgIG1zZyA9IGF3YWl0IG1lc3NhZ2UucmVwbHlfdGV4dCgKICAgICAgICAgICAgZiJfX3RyYWluaW5nIGZyb20gY2hhdCBoaXN0b3J5IChsaW1pdDoge2xpbWl0X3N0cn0pLCB0aGlzIG1heSB0YWtlIGEgd2hpbGUhX18iCiAgICAgICAgKQogICAgICAgIHN0YXJ0X3RpbWUgPSB0aW1lLnBlcmZfY291bnRlcigpCgogICAgICAgICMgQWNjdW11bGF0ZSBhbGwgdXBkYXRlcyBpbiBhIGxvY2FsIGRpY3Qg4oCUIG9uZSBkYiB3cml0ZSBhdCB0aGUgZW5kLgogICAgICAgIHNjb3JlcyA9IHNlbGYuX2dldF9zY29yZXMobWVzc2FnZS5jaGF0LmlkKQogICAgICAgIGNvdW50ID0gMAogICAgICAgIGFzeW5jIGZvciBtIGluIGFwcC5nZXRfY2hhdF9oaXN0b3J5KG1lc3NhZ2UuY2hhdC5pZCwgbGltaXQ9bGltaXQgb3IgMCk6CiAgICAgICAgICAgIGlmIG0udGV4dCBpcyBOb25lIGFuZCBtLmNhcHRpb24gaXMgTm9uZToKICAgICAgICAgICAgICAgIGNvbnRpbnVlCiAgICAgICAgICAgIHRleHQgPSBtLnRleHQgb3IgbS5jYXB0aW9uIG9yICIiCiAgICAgICAgICAgIHNlbGYuX2FwcGx5X3RleHQoc2NvcmVzLCB0ZXh0KQogICAgICAgICAgICBjb3VudCArPSAxCgogICAgICAgIHNlbGYuX3NldF9zY29yZXMobWVzc2FnZS5jaGF0LmlkLCBzY29yZXMpCgogICAgICAgIGVuZF90aW1lID0gdGltZS5wZXJmX2NvdW50ZXIoKQogICAgICAgIHRpbWVfZGVsdGEgPSBlbmRfdGltZSAtIHN0YXJ0X3RpbWUKICAgICAgICBsb2dnZXIuaW5mbygiLS0tIFRSQUlOSU5HIERPTkUgLS0tXG50b29rICVmIHNlY29uZHMgKCVkIG1lc3NhZ2VzKSIsIHRpbWVfZGVsdGEsIGNvdW50KQogICAgICAgIGF3YWl0IG1zZy5lZGl0X3RleHQoZiJfX3RyYWluaW5nIGRvbmUuIHByb2Nlc3NlZCB7Y291bnR9IG1lc3NhZ2VzIGluIHt0aW1lX2RlbHRhOi4yZn1zX18iKQoKICAgIEBvdmVycmlkZQogICAgZGVmIHJlZ2lzdGVyX2hhbmRsZXJzKHNlbGYpIC0+IFJlZ2lzdGVySGFuZGxlcnNSZXN1bHQ6CiAgICAgICAgIyBCdWlsZCBhIGZpbHRlciB0aGF0IG1hdGNoZXMgYW55IGNvbW1hbmQgdGhpcyBwbHVnaW4gaGFuZGxlcywgc28gdGhlCiAgICAgICAgIyBwYXNzaXZlIGxpc3RlbmVyIG5ldmVyIGluZ2VzdHMgYm90IGNvbW1hbmRzIGFzIHRyYWluaW5nIHdvcmRzLgogICAgICAgIGNvbW1hbmRfZmlsdGVyID0gZmlsdGVycy5jb21tYW5kKAogICAgICAgICAgICBbImVuYWJsZWJzIiwgImRpc2FibGVicyIsICJnZW5lcmF0ZWJzIiwgImdicyIsICJnZXRjaGF0YnMiLCAiZ2NicyIsICJ0cmFpbmZyb21oaXN0b3J5IiwgInRmaCIsICJwaW5nIl0sCiAgICAgICAgICAgIHByZWZpeGVzPXNlbGYucHJlZml4ZXMsCiAgICAgICAgKQogICAgICAgIGxpc3RlbmVyX2ZpbHRlciA9IChmaWx0ZXJzLnRleHQgfCBmaWx0ZXJzLmNhcHRpb24pICYgfmNvbW1hbmRfZmlsdGVyCgogICAgICAgIHJldHVybiBSZWdpc3RlckhhbmRsZXJzUmVzdWx0KAogICAgICAgICAgICBncm91cD01LAogICAgICAgICAgICBoYW5kbGVycz1bCiAgICAgICAgICAgICAgICBNZXNzYWdlSGFuZGxlcihzZWxmLnBpbmcsIGZpbHRlcnMuY29tbWFuZCgicGluZyIsIHByZWZpeGVzPXNlbGYucHJlZml4ZXMpKSwKICAgICAgICAgICAgICAgIE1lc3NhZ2VIYW5kbGVyKHNlbGYuZW5hYmxlX2JzLCBmaWx0ZXJzLmNvbW1hbmQoImVuYWJsZWJzIiwgcHJlZml4ZXM9c2VsZi5wcmVmaXhlcykpLAogICAgICAgICAgICAgICAgTWVzc2FnZUhhbmRsZXIoc2VsZi5kaXNhYmxlX2JzLCBmaWx0ZXJzLmNvbW1hbmQoImRpc2FibGVicyIsIHByZWZpeGVzPXNlbGYucHJlZml4ZXMpKSwKICAgICAgICAgICAgICAgIE1lc3NhZ2VIYW5kbGVyKHNlbGYuZ2VuZXJhdGVfYnMsIGZpbHRlcnMuY29tbWFuZChbImdlbmVyYXRlYnMiLCAiZ2JzIl0sIHByZWZpeGVzPXNlbGYucHJlZml4ZXMpKSwKICAgICAgICAgICAgICAgIE1lc3NhZ2VIYW5kbGVyKHNlbGYuZ2V0X2NoYXRfYnMsIGZpbHRlcnMuY29tbWFuZChbImdldGNoYXRicyIsICJnY2JzIl0sIHByZWZpeGVzPXNlbGYucHJlZml4ZXMpKSwKICAgICAgICAgICAgICAgIE1lc3NhZ2VIYW5kbGVyKAogICAgICAgICAgICAgICAgICAgIHNlbGYudHJhaW5fZnJvbV9oaXN0b3J5LCBmaWx0ZXJzLmNvbW1hbmQoWyJ0cmFpbmZyb21oaXN0b3J5IiwgInRmaCJdLCBwcmVmaXhlcz1zZWxmLnByZWZpeGVzKQogICAgICAgICAgICAgICAgKSwKICAgICAgICAgICAgICAgIE1lc3NhZ2VIYW5kbGVyKHNlbGYubGlzdGVuZXIsIGxpc3RlbmVyX2ZpbHRlciksCiAgICAgICAgICAgICAgICBFZGl0ZWRNZXNzYWdlSGFuZGxlcihzZWxmLmxpc3RlbmVyLCBsaXN0ZW5lcl9maWx0ZXIpLAogICAgICAgICAgICBdLAogICAgICAgICkK
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3 of the License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# Copyright (c) 2026, Firdaus Hakimi <hakimifirdaus944@gmail.com>
+import json
+import logging
+import random
+import time
+from functools import cached_property
+from typing import override
+
+from anyio import NamedTemporaryFile
+from jsondb.database import JsonDB
+from pyrogram import filters
+from pyrogram.client import Client
+from pyrogram.handlers.edited_message_handler import EditedMessageHandler
+from pyrogram.handlers.message_handler import MessageHandler
+from pyrogram.types.messages_and_media import Message
+
+from hbot import PERSIST_DIR
+from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
+
+SCORE_INITIAL_CONSTANT = 1.0
+SCORE_INCREMENT_CONSTANT = 0.15
+
+logger = logging.getLogger(__name__)
+
+
+class BsPlugin(BasePlugin):
+    name: str = "Artificial Intelligence"
+    description: str = "Yo homemade AI."
+
+    def __init__(self, app: Client) -> None:
+        self.app: Client = app
+
+    # --- lazy-loaded database ---------------------------------------------------
+
+    @cached_property
+    def _db(self) -> JsonDB:
+        """Initialise the JsonDB instance on first access rather than at import time."""
+        return JsonDB(__name__, PERSIST_DIR)
+
+    # --- whitelist helpers (no duplicate in-memory copy) ------------------------
+
+    def _get_whitelist(self) -> list[int]:
+        return self._db.data.get("whitelist", [])
+
+    def _set_whitelist(self, whitelist: list[int]) -> None:
+        self._db.data.update({"whitelist": whitelist})
+
+    # --- word-score helpers (plain dict[str, float] per chat) -------------------
+
+    def _get_scores(self, chat_id: int) -> dict[str, float]:
+        """Return the word-score mapping for *chat_id* (empty dict if unseen).
+
+        Also performs a one-time cleanup of the legacy 'word_list' key if it
+        exists inside a chat's data blob, preventing TypeError crashes when
+        its list value ends up mixed in with float scores.
+        """
+        raw: dict = dict(self._db.data.get(str(chat_id), {}))
+
+        # One-time migration: drop the old 'word_list' key left over from the
+        # pre-refactor DataEntry/WordEntry schema.
+        if "word_list" in raw:
+            logger.warning(
+                "chat %d: removing legacy 'word_list' key from scores dict", chat_id
+            )
+            raw.pop("word_list")
+            self._db.data.update({str(chat_id): raw})
+
+        # Defensively filter out any remaining non-numeric values so a stale DB
+        # can never cause a TypeError in generate_bs.
+        return {k: v for k, v in raw.items() if isinstance(v, (int, float))}
+
+    def _set_scores(self, chat_id: int, scores: dict[str, float]) -> None:
+        self._db.data.update({str(chat_id): scores})
+
+    # --- internal update (shared by listener and train_from_history) ------------
+
+    def _apply_text(self, scores: dict[str, float], text: str) -> None:
+        """Update *scores* in-place from the words in *text*."""
+        for word in text.replace("\n", " ").split(" "):
+            if not word:
+                continue
+            if word in scores:
+                logger.info(
+                    "incrementing score for word %s from %f to %f",
+                    word,
+                    scores[word],
+                    scores[word] + SCORE_INCREMENT_CONSTANT,
+                )
+                scores[word] += SCORE_INCREMENT_CONSTANT
+            else:
+                logger.info("creating new entry for word %s with score of %f", word, SCORE_INITIAL_CONSTANT)
+                scores[word] = SCORE_INITIAL_CONSTANT
+
+    # --- handlers ---------------------------------------------------------------
+
+    async def ping(self, app: Client, message: Message) -> None:
+        logger.debug("ping, pong!")
+        await message.edit_text("Pong!")
+
+    async def listener(self, app: Client, message: Message) -> None:
+        assert message.chat
+        assert message.chat.id
+
+        text: str
+        if message.caption:
+            text = message.caption
+        elif message.text:
+            text = message.text
+        else:
+            return
+
+        if message.chat.id not in self._get_whitelist():
+            logger.info("chat %d is not in whitelist, ignoring", message.chat.id)
+            return
+
+        logger.info("chat %d is in whitelist, processing", message.chat.id)
+
+        scores = self._get_scores(message.chat.id)
+        self._apply_text(scores, text)
+        self._set_scores(message.chat.id, scores)
+
+    async def enable_bs(self, app: Client, message: Message) -> None:
+        assert message.chat
+        assert message.chat.id
+        assert message.from_user
+        assert app.me
+
+        if message.from_user.id != app.me.id and not await self.is_user_admin(app, message.chat, message.from_user):
+            await message.reply_text("__you need to be admin!__")
+            return
+
+        whitelist = self._get_whitelist()
+        if message.chat.id in whitelist:
+            logger.info("will not enable bs for chat %d; already enabled", message.chat.id)
+            await message.reply_text("__already enabled for this chat__")
+            return
+
+        logger.info("enabling bs for chat %d", message.chat.id)
+        whitelist.append(message.chat.id)
+        self._set_whitelist(whitelist)
+        await message.reply_text("__bs is now enabled for this chat__")
+
+    async def disable_bs(self, app: Client, message: Message) -> None:
+        assert message.chat
+        assert message.chat.id
+        assert message.from_user
+        assert app.me
+
+        if message.from_user.id != app.me.id and not await self.is_user_admin(app, message.chat, message.from_user):
+            await message.reply_text("__you need to be admin!__")
+            return
+
+        whitelist = self._get_whitelist()
+        if message.chat.id not in whitelist:
+            logger.info("will not disable bs for chat %d; already disabled", message.chat.id)
+            await message.reply_text("__already disabled for this chat__")
+            return
+
+        logger.info("disabling bs for chat %d", message.chat.id)
+        whitelist.remove(message.chat.id)
+        self._set_whitelist(whitelist)
+        await message.reply_text("__bs is now disabled for this chat__")
+
+    async def generate_bs(self, app: Client, message: Message) -> None:
+        assert message.chat
+        assert message.chat.id
+
+        bs_word_count = random.randint(20, 50)  # noqa: S311
+        scores = self._get_scores(message.chat.id)
+
+        if not scores:
+            await message.reply_text("__no data for this chat yet!__")
+            return
+
+        words, weights = zip(*scores.items())
+        sentence_words = random.choices(list(words), list(weights), k=bs_word_count)  # noqa: S311
+        sentence = " ".join(sentence_words)
+        logger.info("constructed bs sentence for chat %d is: %s", message.chat.id, sentence)
+        await message.reply_text(f"__{sentence}__")
+
+    async def get_chat_bs(self, app: Client, message: Message) -> None:
+        assert message.chat
+        assert message.chat.id
+
+        scores = self._get_scores(message.chat.id)
+
+        async with NamedTemporaryFile("w+", suffix=".json") as f:
+            await f.write(json.dumps(scores, indent=2))
+            await f.flush()
+            await message.reply_document(f.wrapped.name)
+
+    async def train_from_history(self, app: Client, message: Message, limit: int = 0) -> None:
+        """Train from the chat's message history.
+
+        Args:
+            app: The Pyrogram client.
+            message: The triggering message.
+            limit: Maximum number of historical messages to process.
+                    0 (default) means no limit — process the entire history.
+        """
+        assert message.chat
+        assert message.chat.id
+        assert message.from_user
+        assert app.me
+
+        if message.from_user.id != app.me.id and not await self.is_user_admin(app, message.chat, message.from_user):
+            await message.reply_text("__you need to be admin!__")
+            return
+
+        # Parse optional inline limit: e.g. "/tfh 5000"
+        if message.text:
+            parts = message.text.strip().split()
+            if len(parts) >= 2:
+                try:
+                    limit = int(parts[1])
+                except ValueError:
+                    pass
+
+        logger.info("--- TRAINING FROM CHAT HISTORY OF %d (limit=%d) ---", message.chat.id, limit)
+        limit_str = str(limit) if limit else "no limit"
+        msg = await message.reply_text(
+            f"__training from chat history (limit: {limit_str}), this may take a while!__"
+        )
+        start_time = time.perf_counter()
+
+        # Accumulate all updates in a local dict — one db write at the end.
+        scores = self._get_scores(message.chat.id)
+        count = 0
+        async for m in app.get_chat_history(message.chat.id, limit=limit or 0):
+            if m.text is None and m.caption is None:
+                continue
+            text = m.text or m.caption or ""
+            self._apply_text(scores, text)
+            count += 1
+
+        self._set_scores(message.chat.id, scores)
+
+        end_time = time.perf_counter()
+        time_delta = end_time - start_time
+        logger.info("--- TRAINING DONE ---\ntook %f seconds (%d messages)", time_delta, count)
+        await msg.edit_text(f"__training done. processed {count} messages in {time_delta:.2f}s__")
+
+    @override
+    def register_handlers(self) -> RegisterHandlersResult:
+        # Build a filter that matches any command this plugin handles, so the
+        # passive listener never ingests bot commands as training words.
+        command_filter = filters.command(
+            ["enablebs", "disablebs", "generatebs", "gbs", "getchatbs", "gcbs", "trainfromhistory", "tfh", "ping"],
+            prefixes=self.prefixes,
+        )
+        listener_filter = (filters.text | filters.caption) & ~command_filter
+
+        return RegisterHandlersResult(
+            group=5,
+            handlers=[
+                MessageHandler(self.ping, filters.command("ping", prefixes=self.prefixes)),
+                MessageHandler(self.enable_bs, filters.command("enablebs", prefixes=self.prefixes)),
+                MessageHandler(self.disable_bs, filters.command("disablebs", prefixes=self.prefixes)),
+                MessageHandler(self.generate_bs, filters.command(["generatebs", "gbs"], prefixes=self.prefixes)),
+                MessageHandler(self.get_chat_bs, filters.command(["getchatbs", "gcbs"], prefixes=self.prefixes)),
+                MessageHandler(
+                    self.train_from_history, filters.command(["trainfromhistory", "tfh"], prefixes=self.prefixes)
+                ),
+                MessageHandler(self.listener, listener_filter),
+                EditedMessageHandler(self.listener, listener_filter),
+            ],
+        )
