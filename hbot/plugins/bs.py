@@ -45,6 +45,7 @@ class BsPlugin(BasePlugin):
         self.app: Client = app
         self._db_instance: JsonDB | None = None
         self._db_ttl_handle: asyncio.TimerHandle | None = None
+        self._db_opening: bool = False
 
     # --- TTL-cached database ----------------------------------------------------
     #
@@ -57,8 +58,13 @@ class BsPlugin(BasePlugin):
     def _evict_db(self) -> None:
         """Drop the cached JsonDB instance after the TTL expires."""
         logger.debug("bs: JsonDB TTL expired — evicting cached instance")
-        self._db_instance = None
         self._db_ttl_handle = None
+        if self._db_instance is not None:
+            try:
+                self._db_instance.close()
+            except Exception:
+                logger.exception("bs: error closing JsonDB during eviction")
+            self._db_instance = None
 
     @property
     def _db(self) -> JsonDB:
@@ -67,10 +73,16 @@ class BsPlugin(BasePlugin):
         - On first access (or after eviction): opens the database file.
         - On every subsequent access: cancels the pending eviction and schedules
           a fresh one, so the DB stays alive as long as it is actively used.
+        - Guards against re-entrant construction: if an instance is already being
+          opened, returns the in-progress instance once it is set.
         """
-        if self._db_instance is None:
+        if self._db_instance is None and not self._db_opening:
             logger.debug("bs: opening JsonDB (lazy / post-eviction load)")
-            self._db_instance = JsonDB(__name__, PERSIST_DIR)
+            self._db_opening = True
+            try:
+                self._db_instance = JsonDB(__name__, PERSIST_DIR)
+            finally:
+                self._db_opening = False
 
         # Cancel any in-flight eviction timer and start a fresh one.
         if self._db_ttl_handle is not None:
