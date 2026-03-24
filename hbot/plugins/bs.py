@@ -81,7 +81,9 @@ class BsPlugin(BasePlugin):
         except RuntimeError:
             # No running loop — this should not happen inside a Pyrogram handler,
             # but guard defensively so the property never raises unexpectedly.
-            logger.warning("bs: _db accessed outside of a running event loop; TTL timer not scheduled")
+            logger.warning(
+                "bs: _db accessed outside of a running event loop; TTL timer not scheduled"
+            )
         else:
             self._db_ttl_handle = loop.call_later(_DB_TTL_SECONDS, self._evict_db)
 
@@ -109,7 +111,9 @@ class BsPlugin(BasePlugin):
         # One-time migration: drop the old 'word_list' key left over from the
         # pre-refactor DataEntry/WordEntry schema.
         if "word_list" in raw:
-            logger.warning("chat %d: removing legacy 'word_list' key from scores dict", chat_id)
+            logger.warning(
+                "chat %d: removing legacy 'word_list' key from scores dict", chat_id
+            )
             raw.pop("word_list")
             self._db.data.update({str(chat_id): raw})
 
@@ -136,7 +140,11 @@ class BsPlugin(BasePlugin):
                 )
                 scores[word] += SCORE_INCREMENT_CONSTANT
             else:
-                logger.info("creating new entry for word %s with score of %f", word, SCORE_INITIAL_CONSTANT)
+                logger.info(
+                    "creating new entry for word %s with score of %f",
+                    word,
+                    SCORE_INITIAL_CONSTANT,
+                )
                 scores[word] = SCORE_INITIAL_CONSTANT
 
     # --- handlers ---------------------------------------------------------------
@@ -169,13 +177,17 @@ class BsPlugin(BasePlugin):
         assert message.from_user
         assert app.me
 
-        if message.from_user.id != app.me.id and not await self.is_user_admin(app, message.chat, message.from_user):
+        if message.from_user.id != app.me.id and not await self.is_user_admin(
+            app, message.chat, message.from_user
+        ):
             await message.reply_text("__you need to be admin!__")
             return
 
         whitelist = self._get_whitelist()
         if message.chat.id in whitelist:
-            logger.info("will not enable bs for chat %d; already enabled", message.chat.id)
+            logger.info(
+                "will not enable bs for chat %d; already enabled", message.chat.id
+            )
             await message.reply_text("__already enabled for this chat__")
             return
 
@@ -190,13 +202,17 @@ class BsPlugin(BasePlugin):
         assert message.from_user
         assert app.me
 
-        if message.from_user.id != app.me.id and not await self.is_user_admin(app, message.chat, message.from_user):
+        if message.from_user.id != app.me.id and not await self.is_user_admin(
+            app, message.chat, message.from_user
+        ):
             await message.reply_text("__you need to be admin!__")
             return
 
         whitelist = self._get_whitelist()
         if message.chat.id not in whitelist:
-            logger.info("will not disable bs for chat %d; already disabled", message.chat.id)
+            logger.info(
+                "will not disable bs for chat %d; already disabled", message.chat.id
+            )
             await message.reply_text("__already disabled for this chat__")
             return
 
@@ -219,7 +235,9 @@ class BsPlugin(BasePlugin):
         words, weights = zip(*scores.items(), strict=False)
         sentence_words = random.choices(list(words), list(weights), k=bs_word_count)  # noqa: S311
         sentence = " ".join(sentence_words)
-        logger.info("constructed bs sentence for chat %d is: %s", message.chat.id, sentence)
+        logger.info(
+            "constructed bs sentence for chat %d is: %s", message.chat.id, sentence
+        )
         await message.reply_text(f"__{sentence}__")
 
     async def get_chat_bs(self, app: Client, message: Message) -> None:
@@ -233,7 +251,9 @@ class BsPlugin(BasePlugin):
             await f.flush()
             await message.reply_document(f.wrapped.name)
 
-    async def train_from_history(self, app: Client, message: Message, limit: int = 0) -> None:
+    async def train_from_history(
+        self, app: Client, message: Message, limit: int = 0
+    ) -> None:
         """Train from the chat's message history.
 
         Args:
@@ -247,7 +267,9 @@ class BsPlugin(BasePlugin):
         assert message.from_user
         assert app.me
 
-        if message.from_user.id != app.me.id and not await self.is_user_admin(app, message.chat, message.from_user):
+        if message.from_user.id != app.me.id and not await self.is_user_admin(
+            app, message.chat, message.from_user
+        ):
             await message.reply_text("__you need to be admin!__")
             return
 
@@ -260,9 +282,15 @@ class BsPlugin(BasePlugin):
                 except ValueError:
                     pass
 
-        logger.info("--- TRAINING FROM CHAT HISTORY OF %d (limit=%d) ---", message.chat.id, limit)
+        logger.info(
+            "--- TRAINING FROM CHAT HISTORY OF %d (limit=%d) ---",
+            message.chat.id,
+            limit,
+        )
         limit_str = str(limit) if limit else "no limit"
-        msg = await message.reply_text(f"__training from chat history (limit: {limit_str}), this may take a while!__")
+        msg = await message.reply_text(
+            f"__training from chat history (limit: {limit_str}), this may take a while!__"
+        )
         start_time = time.perf_counter()
 
         # Accumulate all updates in a local dict — one db write at the end.
@@ -279,15 +307,90 @@ class BsPlugin(BasePlugin):
 
         end_time = time.perf_counter()
         time_delta = end_time - start_time
-        logger.info("--- TRAINING DONE ---\ntook %f seconds (%d messages)", time_delta, count)
-        await msg.edit_text(f"__training done. processed {count} messages in {time_delta:.2f}s__")
+        logger.info(
+            "--- TRAINING DONE ---\ntook %f seconds (%d messages)", time_delta, count
+        )
+        await msg.edit_text(
+            f"__training done. processed {count} messages in {time_delta:.2f}s__"
+        )
+
+    async def list_bs_chats(self, app: Client, message: Message) -> None:
+        """List all chats that have stored bs data in the JsonDB."""
+        assert message.chat
+        assert message.chat.id
+        assert message.from_user
+        assert app.me
+
+        if message.from_user.id != app.me.id and not await self.is_user_admin(
+            app, message.chat, message.from_user
+        ):
+            await message.reply_text("__you need to be admin!__")
+            return
+
+        db_data: dict = dict(self._db.data)
+
+        # Collect keys that look like chat IDs (integer strings) and have score data
+        chat_ids: list[int] = []
+        for key in db_data:
+            if key == "whitelist":
+                continue
+            try:
+                chat_ids.append(int(key))
+            except ValueError:
+                continue
+
+        if not chat_ids:
+            await message.reply_text("__no chats with bs data found!__")
+            return
+
+        lines: list[str] = ["**Chats with bs data:**\n"]
+        for chat_id in chat_ids:
+            try:
+                chat = await app.get_chat(chat_id)
+            except Exception:
+                logger.warning(
+                    "list_bs_chats: could not fetch chat info for %d", chat_id
+                )
+                lines.append(f"• Unknown (ID: `{chat_id}`) — could not fetch info")
+                continue
+
+            title: str = (
+                getattr(chat, "title", None)
+                or getattr(chat, "first_name", None)
+                or str(chat_id)
+            )
+            username: str | None = getattr(chat, "username", None)
+
+            if username:
+                link = f"t.me/{username}"
+            else:
+                # Strip leading minus for supergroup/channel IDs in t.me links
+                tme_id = str(chat_id).lstrip("-")
+                # Supergroup/channel IDs prefixed with 100 — strip that prefix
+                if tme_id.startswith("100"):
+                    tme_id = tme_id[3:]
+                link = f"t.me/c/{tme_id}/1"
+
+            lines.append(f"• **{title}** | ID: `{chat_id}` | {link}")
+
+        await message.reply_text("\n".join(lines))
 
     @override
     def register_handlers(self) -> RegisterHandlersResult:
         # Build a filter that matches any command this plugin handles, so the
         # passive listener never ingests bot commands as training words.
         command_filter = filters.command(
-            ["enablebs", "disablebs", "generatebs", "gbs", "getchatbs", "gcbs", "trainfromhistory", "tfh"],
+            [
+                "enablebs",
+                "disablebs",
+                "generatebs",
+                "gbs",
+                "getchatbs",
+                "gcbs",
+                "trainfromhistory",
+                "tfh",
+                "lsbschat",
+            ],
             prefixes=self.prefixes,
         )
         listener_filter = (filters.text | filters.caption) & ~command_filter
@@ -295,12 +398,30 @@ class BsPlugin(BasePlugin):
         return RegisterHandlersResult(
             group=5,
             handlers=[
-                MessageHandler(self.enable_bs, filters.command("enablebs", prefixes=self.prefixes)),
-                MessageHandler(self.disable_bs, filters.command("disablebs", prefixes=self.prefixes)),
-                MessageHandler(self.generate_bs, filters.command(["generatebs", "gbs"], prefixes=self.prefixes)),
-                MessageHandler(self.get_chat_bs, filters.command(["getchatbs", "gcbs"], prefixes=self.prefixes)),
                 MessageHandler(
-                    self.train_from_history, filters.command(["trainfromhistory", "tfh"], prefixes=self.prefixes)
+                    self.enable_bs, filters.command("enablebs", prefixes=self.prefixes)
+                ),
+                MessageHandler(
+                    self.disable_bs,
+                    filters.command("disablebs", prefixes=self.prefixes),
+                ),
+                MessageHandler(
+                    self.generate_bs,
+                    filters.command(["generatebs", "gbs"], prefixes=self.prefixes),
+                ),
+                MessageHandler(
+                    self.get_chat_bs,
+                    filters.command(["getchatbs", "gcbs"], prefixes=self.prefixes),
+                ),
+                MessageHandler(
+                    self.train_from_history,
+                    filters.command(
+                        ["trainfromhistory", "tfh"], prefixes=self.prefixes
+                    ),
+                ),
+                MessageHandler(
+                    self.list_bs_chats,
+                    filters.command("lsbschat", prefixes=self.prefixes),
                 ),
                 MessageHandler(self.listener, listener_filter),
                 EditedMessageHandler(self.listener, listener_filter),
