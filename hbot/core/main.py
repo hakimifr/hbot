@@ -14,15 +14,22 @@
 #
 # Copyright (c) 2026, Firdaus Hakimi <hakimifirdaus944@gmail.com>
 
+import asyncio
 import logging
 import os
 import sys
+import time
+from base64 import b64decode
+from pathlib import Path
 
+from pyrogram import filters
 from pyrogram.client import Client
+from pyrogram.errors import SessionPasswordNeeded
 from pyrogram.handlers.handler import Handler
 from pyrogram.sync import idle
+from pyrogram.types import Message
 
-from hbot import PERSIST_DIR, PLUGINS_DIR
+from hbot import BOTAUTHTOKEN, BOTOWNERID, PERSIST_DIR, PHONENUMBER, PLUGINS_DIR
 from hbot.core.base_plugin import BasePlugin
 from hbot.core.plugins_loader import load_plugins
 
@@ -44,10 +51,114 @@ async def get_loaded_plugins() -> dict[BasePlugin, list[Handler]]:
     return loaded_plugins
 
 
+async def generate_new_session(session_file: Path) -> None:
+    """Create new session and store it into session_file"""
+    session_file.unlink(True)
+
+    app: Client = Client("hbot", api_id, api_hash, phone_number=PHONENUMBER, in_memory=True)
+    bot: Client = Client("authbot", api_id, api_hash, bot_token=BOTAUTHTOKEN)
+
+    await app.connect()
+    sent_code = await app.send_code(PHONENUMBER)
+
+    await bot.start()
+    await bot.send_message(int(BOTOWNERID), "enter the code sent by telegram")
+
+    code_received: bool = False
+    code: int | None = None
+
+    @bot.on_message(filters.text, group=1)
+    async def code_handler(client: Client, message: Message) -> None:
+        nonlocal code_received
+        nonlocal code
+
+        if code_received:
+            return
+
+        assert message.chat
+        assert message.chat.id
+        if message.chat.id != int(BOTOWNERID):
+            return
+
+        assert message.text
+        code = b64decode(message.text).decode().strip()
+        code_received = True
+
+    start = time.perf_counter()
+    while True:
+        if code_received:
+            break
+
+        elapsed = time.perf_counter() - start
+        if elapsed < (5 * 60):
+            await asyncio.sleep(0.3)
+        else:
+            logger.critical("no code were received to generate new session.")
+
+    await bot.send_message(int(BOTOWNERID), "Enter 2fa password, or just type none")
+
+    password_received: bool = False
+    password: str | None = None
+
+    @bot.on_message(filters.text, group=2)
+    async def password_handler(client: Client, message: Message) -> None:
+        nonlocal password_received
+        nonlocal password
+
+        assert message.chat
+        assert message.chat.id
+        if message.chat.id != int(BOTOWNERID):
+            return
+
+        assert message.text
+        password = b64decode(message.text).decode().strip()
+        password_received = True
+
+    start = time.perf_counter()
+    while True:
+        if password_received:
+            break
+
+        elapsed = time.perf_counter() - start
+        if elapsed < (5 * 60):
+            await asyncio.sleep(0.3)
+        else:
+            try:
+                raise RuntimeError("no password were received to generate new session.")
+            except RuntimeError:
+                logger.exception()
+                raise
+
+    try:
+        await app.sign_in(PHONENUMBER, sent_code.phone_code_hash, code)
+    except SessionPasswordNeeded:
+        await app.check_password(password)
+
+    with session_file.open("w", encoding="utf-8") as f:
+        f.write(await app.export_session_string())
+
+    logger.info("new session created successfully")
+
+
 async def main() -> None:
     """Entry point of the bot."""
     global loaded_plugins
-    app = Client("hbot", api_id, api_hash)
+
+    session_file = Path(PERSIST_DIR).joinpath("hbot.session")
+    if not session_file.exists():
+        await generate_new_session(session_file)
+
+    while True:
+        with session_file.open("r", encoding="utf-8") as f:
+            app = Client("hbot", api_id, api_hash, session_string=f.read())
+
+        try:
+            await app.connect()
+            await app.disconnect()
+            break
+        except:
+            logger.exception("problem with session file. generating new session.")
+            await generate_new_session(session_file)
 
     logger.info("loading plugins from %s", PLUGINS_DIR)
     loaded_plugins = await load_plugins(app, PLUGINS_DIR)

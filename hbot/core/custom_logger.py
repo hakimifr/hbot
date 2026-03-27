@@ -12,6 +12,8 @@ from rich.console import Console
 from rich.markup import escape
 from rich.text import Text
 
+lg: logging.Logger = logging.getLogger(__name__)
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -30,6 +32,7 @@ class Logger:
         self.console = Console(force_terminal=True, soft_wrap=True)
 
         self.thread.start()
+        lg.info("logger thread started")
 
         self.level_colour: dict[int, str] = {
             logging.DEBUG: "blue",
