@@ -124,10 +124,7 @@ class MyPlugin(BasePlugin):
             await message.edit_text("__file list too long, uploading as text file__")
             async with NamedTemporaryFile("w", suffix=filename_suffix, encoding="utf-8") as tf:
                 plain_text = (
-                    text.replace("**", "")
-                    .replace("\U0001f4c1", "DIR:")
-                    .replace("\U0001f4c4", "FILE:")
-                    .replace("`", "")
+                    text.replace("**", "").replace("\U0001f4c1", "DIR:").replace("\U0001f4c4", "FILE:").replace("`", "")
                 )
                 await tf.write(plain_text)
                 await tf.flush()
