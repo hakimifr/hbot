@@ -31,6 +31,7 @@ from pyrogram.types import Message
 
 from hbot import BOTAUTHTOKEN, BOTOWNERID, PERSIST_DIR, PHONENUMBER, PLUGINS_DIR
 from hbot.core.base_plugin import BasePlugin
+from hbot.core.localrunmonitor import LocalRunMonitor
 from hbot.core.plugins_loader import load_plugins
 
 logger = logging.getLogger(__name__)
@@ -156,12 +157,16 @@ async def main() -> None:
             await app.connect()
             await app.disconnect()
             break
+        # ruff: disable[E722] bare except
         except:
             logger.exception("problem with session file. generating new session.")
             await generate_new_session(session_file)
 
     logger.info("loading plugins from %s", PLUGINS_DIR)
     loaded_plugins = await load_plugins(app, PLUGINS_DIR)
+
+    local_run_monitor = LocalRunMonitor(app)
+    local_run_monitor.start()
 
     try:
         await app.start()

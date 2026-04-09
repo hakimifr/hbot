@@ -21,6 +21,7 @@ ignore = [
     # using assert to satisfy linter
     "S101",
     "BLE001",  # allow bare exception
+    "S404",    # `subprocess` module is possibly insecure
 ]
 fixable = ["ALL"]
 unfixable = []

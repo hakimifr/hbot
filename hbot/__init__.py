@@ -27,6 +27,11 @@ def getenv_nofail(env_var: str) -> str:
     return var
 
 
+def gentenv_bool(env_var: str) -> bool:
+    var = getenv(env_var, False)
+    return bool(var)
+
+
 PLUGINS_DIR: Path = Path(inspect.getfile(lambda _: _)).parent.joinpath("plugins")
 
 _persist_dir = getenv("PERSIST_DIR") or "/persist/storage"
@@ -35,6 +40,7 @@ PERSIST_DIR: Path = Path(_persist_dir)
 BOTAUTHTOKEN: str = getenv_nofail("BOTAUTHTOKEN")
 BOTOWNERID: str = getenv_nofail("BOTOWNERID")
 PHONENUMBER: str = getenv_nofail("PHONENUMBER")
+LOCALRUN: bool = gentenv_bool("LOCALRUN")
 
 if any((BOTAUTHTOKEN is None, BOTOWNERID is None, PHONENUMBER is None)):
     raise RuntimeError("some environment variable aren't set")
