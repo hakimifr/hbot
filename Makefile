@@ -19,7 +19,7 @@ lint:
 	ruff format
 
 run:
-	PERSIST_DIR=. UV_PYTHON=3.14t PYTHON_GIL=0 uv run python3 -m hbot
+	LOCALRUN=true PERSIST_DIR=. UV_PYTHON=3.14t PYTHON_GIL=0 uv run python3 -m hbot
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
