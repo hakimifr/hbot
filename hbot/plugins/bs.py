@@ -22,10 +22,7 @@ from typing import override
 
 from anyio import NamedTemporaryFile
 from jsondb.database import JsonDB
-from pyrogram import filters
 from pyrogram.client import Client
-from pyrogram.handlers.edited_message_handler import EditedMessageHandler
-from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
 from hbot import PERSIST_DIR
@@ -360,47 +357,48 @@ class BsPlugin(BasePlugin):
     def register_handlers(self) -> RegisterHandlersResult:
         # Build a filter that matches any command this plugin handles, so the
         # passive listener never ingests bot commands as training words.
-        command_filter = filters.command(
-            [
-                "enablebs",
-                "disablebs",
-                "generatebs",
-                "gbs",
-                "getchatbs",
-                "gcbs",
-                "trainfromhistory",
-                "tfh",
-                "lsbschat",
-            ],
-            prefixes=self.prefixes,
-        )
-        listener_filter = (filters.text | filters.caption) & ~command_filter
-
-        return RegisterHandlersResult(
-            group=5,
-            handlers=[
-                MessageHandler(self.enable_bs, filters.command("enablebs", prefixes=self.prefixes)),
-                MessageHandler(
-                    self.disable_bs,
-                    filters.command("disablebs", prefixes=self.prefixes),
-                ),
-                MessageHandler(
-                    self.generate_bs,
-                    filters.command(["generatebs", "gbs"], prefixes=self.prefixes),
-                ),
-                MessageHandler(
-                    self.get_chat_bs,
-                    filters.command(["getchatbs", "gcbs"], prefixes=self.prefixes),
-                ),
-                MessageHandler(
-                    self.train_from_history,
-                    filters.command(["trainfromhistory", "tfh"], prefixes=self.prefixes),
-                ),
-                MessageHandler(
-                    self.list_bs_chats,
-                    filters.command("lsbschat", prefixes=self.prefixes),
-                ),
-                MessageHandler(self.listener, listener_filter),
-                EditedMessageHandler(self.listener, listener_filter),
-            ],
-        )
+        # command_filter = filters.command(
+        #     [
+        #         "enablebs",
+        #         "disablebs",
+        #         "generatebs",
+        #         "gbs",
+        #         "getchatbs",
+        #         "gcbs",
+        #         "trainfromhistory",
+        #         "tfh",
+        #         "lsbschat",
+        #     ],
+        #     prefixes=self.prefixes,
+        # )
+        # listener_filter = (filters.text | filters.caption) & ~command_filter
+        #
+        # return RegisterHandlersResult(
+        #     group=5,
+        #     handlers=[
+        #         MessageHandler(self.enable_bs, filters.command("enablebs", prefixes=self.prefixes)),
+        #         MessageHandler(
+        #             self.disable_bs,
+        #             filters.command("disablebs", prefixes=self.prefixes),
+        #         ),
+        #         MessageHandler(
+        #             self.generate_bs,
+        #             filters.command(["generatebs", "gbs"], prefixes=self.prefixes),
+        #         ),
+        #         MessageHandler(
+        #             self.get_chat_bs,
+        #             filters.command(["getchatbs", "gcbs"], prefixes=self.prefixes),
+        #         ),
+        #         MessageHandler(
+        #             self.train_from_history,
+        #             filters.command(["trainfromhistory", "tfh"], prefixes=self.prefixes),
+        #         ),
+        #         MessageHandler(
+        #             self.list_bs_chats,
+        #             filters.command("lsbschat", prefixes=self.prefixes),
+        #         ),
+        #         MessageHandler(self.listener, listener_filter),
+        #         EditedMessageHandler(self.listener, listener_filter),
+        #     ],
+        # )
+        return RegisterHandlersResult([])
