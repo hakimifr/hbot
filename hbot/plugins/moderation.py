@@ -381,6 +381,9 @@ class ModPlugin(BasePlugin):
         assert message.chat
 
         member = await message.chat.get_member(message.from_user.id)
+        rf_requester_id = message.from_user.id
+        rf_requester_name = message.from_user.full_name
+        rf_request_link = message.link
 
         if member.status not in {ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER}:
             await message.reply_text("__you're not admin in this chat!__")
@@ -408,7 +411,12 @@ class ModPlugin(BasePlugin):
 
         fban_reason = " ".join(args)
 
-        msg = await app.send_message(-1001754321934, f"!{cmd} {user_id} {fban_reason}")
+        msg = await app.send_message(
+            -1001754321934,
+            f"!{cmd} {user_id} relayfban/relayunfban requested by: "
+            f"[{rf_requester_name}](tg://user?id={rf_requester_id}), "
+            f"message link: {rf_request_link}, reason: {fban_reason}",
+        )
         await message.reply_text(msg.link)
 
     async def sgblock(self, app: Client, message: Message, block_whole_pack: bool = False) -> None:
