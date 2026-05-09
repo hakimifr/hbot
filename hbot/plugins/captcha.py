@@ -32,6 +32,9 @@ from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 
 CHAT_WHITELIST: list[int] = [
     -1001267207006,  # photography group
+    -1002237651092,  # disc
+    -1001754321934,  # community
+    -1001309495065,  # r6
 ]
 TIMEOUT_SECONDS = 30
 
