@@ -18,6 +18,7 @@ import asyncio
 import logging
 import random
 import time
+from datetime import datetime, timedelta
 from typing import override
 
 from jsondb.database import JsonDB
@@ -37,6 +38,8 @@ CHAT_WHITELIST: list[int] = [
     -1001309495065,  # r6
 ]
 TIMEOUT_SECONDS = 30
+TEMP_BAN_SECONDS = 21600
+FAILURE_TRACKER_KEY = "__failures__"
 
 logger = logging.getLogger(__name__)
 db = JsonDB(__name__, PERSIST_DIR)
@@ -47,8 +50,12 @@ db = JsonDB(__name__, PERSIST_DIR)
 #             "expected": 123456,
 #             "challenge_message_id": 42,
 #             "expires_at": 1778400000.123,
+#         },
+#         ...,
+#         "__failures__": {
+#             "user_id": consecutive_failure_count,
 #         }
-#     }
+#     },
 # }
 
 
@@ -60,9 +67,28 @@ class CaptchaPlugin(BasePlugin):
         self.app = app
 
         loop = asyncio.get_event_loop()
+        scheduled_count = 0
 
         for chat_id_str, users in db.data.items():
+            if not chat_id_str.lstrip("-").isdigit():
+                continue
+
+            if not isinstance(users, dict):
+                continue
+
             for user_id_str, payload in users.items():
+                if user_id_str == FAILURE_TRACKER_KEY:
+                    continue
+
+                if not user_id_str.lstrip("-").isdigit():
+                    continue
+
+                if not isinstance(payload, dict):
+                    continue
+
+                if "expires_at" not in payload:
+                    continue
+
                 remaining = payload["expires_at"] - time.time()
 
                 if remaining < 0:
@@ -75,6 +101,60 @@ class CaptchaPlugin(BasePlugin):
                         int(user_id_str),
                     )
                 )
+                scheduled_count += 1
+
+        logger.info("Captcha plugin initialized; restored %d pending kicker tasks", scheduled_count)
+
+    def _get_failures_bucket(self, chat_id: int, *, create: bool = False) -> dict | None:
+        chat_key = str(chat_id)
+        chat = db.data.get(chat_key)
+
+        if chat is None:
+            if not create:
+                return None
+            db.data[chat_key] = {}
+            chat = db.data[chat_key]
+
+        if not isinstance(chat, dict):
+            return None
+
+        failures = chat.get(FAILURE_TRACKER_KEY)
+
+        if failures is None:
+            if not create:
+                return None
+            chat[FAILURE_TRACKER_KEY] = {}
+            failures = chat[FAILURE_TRACKER_KEY]
+
+        if not isinstance(failures, dict):
+            return None
+
+        return failures
+
+    def _increment_consecutive_failures(self, chat_id: int, user_id: int) -> int:
+        failures = self._get_failures_bucket(chat_id, create=True)
+        assert failures is not None
+
+        user_key = str(user_id)
+        failures[user_key] = int(failures.get(user_key, 0)) + 1
+        db.write_database()
+        logger.info(
+            "Incremented consecutive failures to %d for user %d in chat %d",
+            failures[user_key],
+            user_id,
+            chat_id,
+        )
+
+        return failures[user_key]
+
+    def _reset_consecutive_failures(self, chat_id: int, user_id: int) -> None:
+        failures = self._get_failures_bucket(chat_id)
+        if failures is None:
+            return
+
+        failures.pop(str(user_id), None)
+        db.write_database()
+        logger.info("Reset consecutive failures for user %d in chat %d", user_id, chat_id)
 
     def _get_user_record(self, chat_id: int, user_id: int) -> dict | None:
         return db.data.get(str(chat_id), {}).get(str(user_id))
@@ -101,6 +181,13 @@ class CaptchaPlugin(BasePlugin):
         }
 
         db.write_database()
+        logger.info(
+            "Saved captcha record for user %d in chat %d (challenge_message_id=%d, expires_at=%.3f)",
+            user_id,
+            chat_id,
+            challenge_message_id,
+            expires_at,
+        )
 
     def _delete_user_record(self, chat_id: int, user_id: int) -> None:
         chat_key = str(chat_id)
@@ -116,28 +203,74 @@ class CaptchaPlugin(BasePlugin):
             db.data.pop(chat_key, None)
 
         db.write_database()
+        logger.info("Deleted captcha record for user %d in chat %d", user_id, chat_id)
 
     async def kicker(self, after: float | int, chat_id: int, user_id: int) -> None:
+        logger.info(
+            "Scheduled kicker for user %d in chat %d after %.3f seconds",
+            user_id,
+            chat_id,
+            float(after),
+        )
         await asyncio.sleep(after)
 
-        # User may have solved captcha while we were sleeping.
         if self._get_user_record(chat_id, user_id) is None:
+            logger.info(
+                "Skipping kicker for user %d in chat %d because captcha record no longer exists",
+                user_id,
+                chat_id,
+            )
             return
 
         try:
             member = await self.app.get_chat_member(chat_id, user_id)
-
-            await self.app.ban_chat_member(chat_id, user_id)
-            await self.app.unban_chat_member(chat_id, user_id)
-
-            await self.app.send_message(
+            failures = self._increment_consecutive_failures(chat_id, user_id)
+            logger.info(
+                "Captcha timeout for user %d in chat %d; consecutive failures=%d",
+                user_id,
                 chat_id,
-                (
-                    f"__kicked "
-                    f"[{member.user.full_name}](tg://user?id={user_id}) "
-                    f"for failing to complete the captcha in time.__"
-                ),
+                failures,
             )
+
+            if failures >= 3:
+                until_date = datetime.now() + timedelta(seconds=TEMP_BAN_SECONDS)
+                await self.app.ban_chat_member(
+                    chat_id,
+                    user_id,
+                    until_date=until_date,
+                )
+                await self.app.send_message(
+                    chat_id,
+                    (
+                        f"__temporarily banned "
+                        f"[{member.user.full_name}](tg://user?id={user_id}) "
+                        f"for 6 hours after 3 consecutive failed verifications.__"
+                    ),
+                )
+                logger.info(
+                    "Applied 6-hour temp ban to user %d in chat %d until %s after timeout",
+                    user_id,
+                    chat_id,
+                    until_date,
+                )
+            else:
+                await self.app.ban_chat_member(chat_id, user_id)
+                await self.app.unban_chat_member(chat_id, user_id)
+
+                await self.app.send_message(
+                    chat_id,
+                    (
+                        f"__kicked "
+                        f"[{member.user.full_name}](tg://user?id={user_id}) "
+                        f"for failing to complete the captcha in time.__"
+                    ),
+                )
+                logger.info(
+                    "Kicked user %d from chat %d due to captcha timeout (consecutive failures=%d)",
+                    user_id,
+                    chat_id,
+                    failures,
+                )
 
         except Exception:
             logger.exception(
@@ -161,6 +294,11 @@ class CaptchaPlugin(BasePlugin):
 
         if chat_id not in CHAT_WHITELIST:
             return
+        logger.info(
+            "Processing new chat members event in chat %d with %d members",
+            chat_id,
+            len(message.new_chat_members),
+        )
 
         me = await app.get_chat_member(chat_id, "me")
         if me.status not in {
@@ -172,9 +310,10 @@ class CaptchaPlugin(BasePlugin):
 
         for user in message.new_chat_members:
             if user.is_bot:
+                logger.info("Skipping captcha for bot user %d in chat %d", user.id, chat_id)
                 continue
 
-            expected = random.randint(100000, 999999)
+            expected = random.randint(100000, 999999)  # noqa: S311
 
             challenge = await app.send_message(
                 chat_id,
@@ -185,6 +324,12 @@ class CaptchaPlugin(BasePlugin):
                     f"{expected}\n\n"
                     f"You have {TIMEOUT_SECONDS} seconds before you're kicked."
                 ),
+            )
+            logger.info(
+                "Issued captcha challenge for user %d in chat %d (challenge_message_id=%d)",
+                user.id,
+                chat_id,
+                challenge.id,
             )
 
             expires_at = time.time() + TIMEOUT_SECONDS
@@ -204,6 +349,12 @@ class CaptchaPlugin(BasePlugin):
                     user.id,
                 )
             )
+            logger.info(
+                "Started kicker timer for user %d in chat %d with timeout=%d",
+                user.id,
+                chat_id,
+                TIMEOUT_SECONDS,
+            )
 
     async def verifyhandler(self, app: Client, message: Message) -> None:
         if not message.chat or not message.from_user or not message.text:
@@ -212,23 +363,48 @@ class CaptchaPlugin(BasePlugin):
         assert message.chat.id
         chat_id = message.chat.id
         user_id = message.from_user.id
+        logger.info("Received verification message from user %d in chat %d", user_id, chat_id)
 
         record = self._get_user_record(chat_id, user_id)
         if record is None:
+            logger.info(
+                "Ignoring verification message from user %d in chat %d because no captcha record exists",
+                user_id,
+                chat_id,
+            )
             return
 
         if not message.reply_to_message:
+            logger.info(
+                "Ignoring verification message from user %d in chat %d because it is not a reply",
+                user_id,
+                chat_id,
+            )
             return
 
         if message.reply_to_message.id != record["challenge_message_id"]:
+            logger.info(
+                "Ignoring verification message from user %d in chat %d because reply message id %d does not match challenge id %d",  # noqa: E501
+                user_id,
+                chat_id,
+                message.reply_to_message.id,
+                record["challenge_message_id"],
+            )
             return
 
         if message.text.strip() != str(record["expected"]):
             await message.reply("__wrong code.__")
+            logger.info(
+                "User %d submitted wrong captcha in chat %d; retries allowed and consecutive failures unchanged",
+                user_id,
+                chat_id,
+            )
             return
 
         await message.reply("__Verification successful. Welcome!__")
+        logger.info("User %d solved captcha in chat %d", user_id, chat_id)
 
+        self._reset_consecutive_failures(chat_id, user_id)
         self._delete_user_record(chat_id, user_id)
 
         logger.info(
