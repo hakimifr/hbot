@@ -277,7 +277,7 @@ class LintUtils:
         if TAG_DEVICE not in DEVICE:
             logger.info("invalid device: %s", TAG_DEVICE)
             idx = "third" if cls.kernel else "fourth"
-            error_message += f"• Incorrect device mentioned on the {idx} hashtag. (RM6785/RMX2001/RMX2151/salaa)\n"
+            error_message += f"• Incorrect device mentioned on the {idx} hashtag. ({'/'.join(DEVICE)})\n"
 
         if not cls.kernel and TAG_ANDROID_VER not in ANDROID_VERSION:
             logger.info("invalid android version: %s", TAG_ANDROID_VER)
