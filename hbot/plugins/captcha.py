@@ -37,8 +37,9 @@ CHAT_WHITELIST: list[int] = [
     -1001754321934,  # community
     -1001309495065,  # r6
 ]
-TIMEOUT_SECONDS = 30
+TIMEOUT_SECONDS = 60
 TEMP_BAN_SECONDS = 21600
+MAX_FAIL_BEFORE_TEMPBAN = 6
 FAILURE_TRACKER_KEY = "__failures__"
 
 logger = logging.getLogger(__name__)
@@ -232,7 +233,7 @@ class CaptchaPlugin(BasePlugin):
                 failures,
             )
 
-            if failures >= 3:
+            if failures >= MAX_FAIL_BEFORE_TEMPBAN:
                 until_date = datetime.now() + timedelta(seconds=TEMP_BAN_SECONDS)
                 await self.app.ban_chat_member(
                     chat_id,
@@ -244,11 +245,16 @@ class CaptchaPlugin(BasePlugin):
                     (
                         f"__temporarily banned "
                         f"[{member.user.full_name}](tg://user?id={user_id}) "
-                        f"for 6 hours after 3 consecutive failed verifications.__"
+                        f"for 6 hours after {MAX_FAIL_BEFORE_TEMPBAN} consecutive failed verifications.__"
                     ),
                 )
                 logger.info(
-                    "Applied 6-hour temp ban to user %d in chat %d until %s after timeout",
+                    "user %d failed captcha for MAX_FAIL_BEFORE_TEMPBAN (%d) times",
+                    user_id,
+                    MAX_FAIL_BEFORE_TEMPBAN,
+                )
+                logger.info(
+                    "applied 6-hour temp ban to user %d in chat %d until %s after timeout",
                     user_id,
                     chat_id,
                     until_date,
