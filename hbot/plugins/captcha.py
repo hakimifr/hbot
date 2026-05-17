@@ -259,6 +259,7 @@ class CaptchaPlugin(BasePlugin):
                     chat_id,
                     until_date,
                 )
+                self._reset_consecutive_failures(chat_id, user_id)
             else:
                 await self.app.ban_chat_member(chat_id, user_id)
                 await self.app.unban_chat_member(chat_id, user_id)
