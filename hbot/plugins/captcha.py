@@ -404,6 +404,7 @@ class CaptchaPlugin(BasePlugin):
             return
 
         await message.reply("__Verification successful. Welcome!__")
+        await message.reply_to_message.delete()
         logger.info("User %d solved captcha in chat %d", user_id, chat_id)
 
         self._reset_consecutive_failures(chat_id, user_id)
