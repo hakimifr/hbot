@@ -329,6 +329,7 @@ class CaptchaPlugin(BasePlugin):
                     f"[{user.full_name}](tg://user?id={user.id})!\n\n"
                     f"Please **reply** to this message with:\n\n"
                     f"{expected}\n\n"
+                    f"Your message **WILL BE IGNORED** if you do not **reply** to this message. "
                     f"You have {TIMEOUT_SECONDS} seconds before you're kicked."
                 ),
             )
