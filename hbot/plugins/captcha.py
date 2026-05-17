@@ -373,11 +373,6 @@ class CaptchaPlugin(BasePlugin):
 
         record = self._get_user_record(chat_id, user_id)
         if record is None:
-            logger.info(
-                "Ignoring verification message from user %d in chat %d because no captcha record exists",
-                user_id,
-                chat_id,
-            )
             return
 
         if not message.reply_to_message:
