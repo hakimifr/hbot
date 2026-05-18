@@ -215,13 +215,18 @@ class CaptchaPlugin(BasePlugin):
         )
         await asyncio.sleep(after)
 
-        if self._get_user_record(chat_id, user_id) is None:
+        user_record = self._get_user_record(chat_id, user_id)
+
+        if user_record is None:
             logger.info(
                 "Skipping kicker for user %d in chat %d because captcha record no longer exists",
                 user_id,
                 chat_id,
             )
             return
+
+        captcha_message_id = user_record.get("challenge_message_id")
+        assert isinstance(captcha_message_id, str)
 
         try:
             member = await self.app.get_chat_member(chat_id, user_id)
@@ -278,6 +283,8 @@ class CaptchaPlugin(BasePlugin):
                     chat_id,
                     failures,
                 )
+
+            await self.app.delete_messages(chat_id, int(captcha_message_id))
 
         except Exception:
             logger.exception(
