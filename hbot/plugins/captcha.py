@@ -327,6 +327,11 @@ class CaptchaPlugin(BasePlugin):
                 logger.info("Skipping captcha for bot user %d in chat %d", user.id, chat_id)
                 continue
 
+            user_record = self._get_user_record(chat_id, user.id)
+            if user_record and user_record.get("expires_at", 0) - time.time() > 0:
+                logger.info("will not re-trigger captcha since user's captcha duration is still valid")
+                continue
+
             expected = random.randint(100000, 999999)  # noqa: S311
 
             challenge = await app.send_message(
@@ -378,11 +383,12 @@ class CaptchaPlugin(BasePlugin):
         assert message.chat.id
         chat_id = message.chat.id
         user_id = message.from_user.id
-        logger.info("Received verification message from user %d in chat %d", user_id, chat_id)
 
         record = self._get_user_record(chat_id, user_id)
         if record is None:
             return
+
+        logger.info("Received verification message from user %d in chat %d", user_id, chat_id)
 
         if not message.reply_to_message:
             logger.info(
