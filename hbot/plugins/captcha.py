@@ -226,7 +226,7 @@ class CaptchaPlugin(BasePlugin):
             return
 
         captcha_message_id = user_record.get("challenge_message_id")
-        assert isinstance(captcha_message_id, str)
+        assert isinstance(captcha_message_id, int)
 
         try:
             member = await self.app.get_chat_member(chat_id, user_id)
