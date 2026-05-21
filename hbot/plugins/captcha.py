@@ -22,10 +22,8 @@ from datetime import datetime, timedelta
 from typing import override
 
 from jsondb.database import JsonDB
-from pyrogram import filters
 from pyrogram.client import Client
 from pyrogram.enums import ChatMemberStatus, MessageServiceType
-from pyrogram.handlers import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
 from hbot import PERSIST_DIR
@@ -432,10 +430,11 @@ class CaptchaPlugin(BasePlugin):
 
     @override
     def register_handlers(self) -> RegisterHandlersResult:
-        return RegisterHandlersResult(
-            group=6,
-            handlers=[
-                MessageHandler(self.joinhandler, filters.service),
-                MessageHandler(self.verifyhandler, filters.text),
-            ],
-        )
+        # return RegisterHandlersResult(
+        #     group=6,
+        #     handlers=[
+        #         MessageHandler(self.joinhandler, filters.service),
+        #         MessageHandler(self.verifyhandler, filters.text),
+        #     ],
+        # )
+        return RegisterHandlersResult(group=6, handlers=[])
