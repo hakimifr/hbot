@@ -18,7 +18,6 @@ import asyncio
 import logging
 import os
 import sys
-import time
 from base64 import b64decode
 from pathlib import Path
 
@@ -47,9 +46,20 @@ if not (PERSIST_DIR.exists() and PERSIST_DIR.is_dir()):
     logger.critical("PERSIST_DIR '%s' does not exist!", PERSIST_DIR.as_posix())
     sys.exit(1)
 
+AUTH_TIMEOUT_SECONDS = 300
+
 
 async def get_loaded_plugins() -> dict[BasePlugin, list[Handler]]:
     return loaded_plugins
+
+
+async def wait_for_user_input(event: asyncio.Event, what: str) -> None:
+    """Wait for *event* to be set, or give up after AUTH_TIMEOUT_SECONDS."""
+    try:
+        await asyncio.wait_for(event.wait(), AUTH_TIMEOUT_SECONDS)
+    except TimeoutError:
+        logger.critical("no %s were received to generate new session.", what)
+        raise
 
 
 async def generate_new_session(session_file: Path) -> None:
@@ -63,82 +73,63 @@ async def generate_new_session(session_file: Path) -> None:
     sent_code = await app.send_code(PHONENUMBER)
 
     await bot.start()
-    await bot.send_message(int(BOTOWNERID), "enter the code sent by telegram")
-
-    code_received: bool = False
-    code: int | None = None
-
-    @bot.on_message(filters.text, group=1)
-    async def code_handler(client: Client, message: Message) -> None:
-        nonlocal code_received
-        nonlocal code
-
-        if code_received:
-            return
-
-        assert message.chat
-        assert message.chat.id
-        if message.chat.id != int(BOTOWNERID):
-            return
-
-        assert message.text
-        code = b64decode(message.text).decode().strip()
-        code_received = True
-
-    start = time.perf_counter()
-    while True:
-        if code_received:
-            break
-
-        elapsed = time.perf_counter() - start
-        if elapsed < (5 * 60):
-            await asyncio.sleep(0.3)
-        else:
-            logger.critical("no code were received to generate new session.")
-
-    await bot.send_message(int(BOTOWNERID), "Enter 2fa password, or just type none")
-
-    password_received: bool = False
-    password: str | None = None
-
-    @bot.on_message(filters.text, group=2)
-    async def password_handler(client: Client, message: Message) -> None:
-        nonlocal password_received
-        nonlocal password
-
-        assert message.chat
-        assert message.chat.id
-        if message.chat.id != int(BOTOWNERID):
-            return
-
-        assert message.text
-        password = b64decode(message.text).decode().strip()
-        password_received = True
-
-    start = time.perf_counter()
-    while True:
-        if password_received:
-            break
-
-        elapsed = time.perf_counter() - start
-        if elapsed < (5 * 60):
-            await asyncio.sleep(0.3)
-        else:
-            try:
-                raise RuntimeError("no password were received to generate new session.")
-            except RuntimeError:
-                logger.exception()
-                raise
-
     try:
-        await app.sign_in(PHONENUMBER, sent_code.phone_code_hash, code)
-    except SessionPasswordNeeded:
-        await app.check_password(password)
+        await bot.send_message(int(BOTOWNERID), "enter the code sent by telegram")
 
-    with session_file.open("w", encoding="utf-8") as f:
-        f.write(await app.export_session_string())
+        code_received: asyncio.Event = asyncio.Event()
+        code: str | None = None
 
-    logger.info("new session created successfully")
+        @bot.on_message(filters.text, group=1)
+        async def code_handler(client: Client, message: Message) -> None:
+            nonlocal code
+
+            if code_received.is_set():
+                return
+
+            assert message.chat
+            assert message.chat.id
+            if message.chat.id != int(BOTOWNERID):
+                return
+
+            assert message.text
+            code = b64decode(message.text).decode().strip()
+            code_received.set()
+
+        await wait_for_user_input(code_received, "code")
+        assert code is not None
+
+        await bot.send_message(int(BOTOWNERID), "Enter 2fa password, or just type none")
+
+        password_received: asyncio.Event = asyncio.Event()
+        password: str | None = None
+
+        @bot.on_message(filters.text, group=2)
+        async def password_handler(client: Client, message: Message) -> None:
+            nonlocal password
+
+            assert message.chat
+            assert message.chat.id
+            if message.chat.id != int(BOTOWNERID):
+                return
+
+            assert message.text
+            password = b64decode(message.text).decode().strip()
+            password_received.set()
+
+        await wait_for_user_input(password_received, "2fa password")
+        assert password is not None
+
+        try:
+            await app.sign_in(PHONENUMBER, sent_code.phone_code_hash, code)
+        except SessionPasswordNeeded:
+            await app.check_password(password)
+
+        with session_file.open("w", encoding="utf-8") as f:
+            f.write(await app.export_session_string())
+
+        logger.info("new session created successfully")
+    finally:
+        await bot.stop()
 
 
 async def main() -> None:
