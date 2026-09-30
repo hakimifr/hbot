@@ -28,6 +28,10 @@ dev = [
 venvPath = "."
 venv = ".venv"
 exclude = [
+    # setting exclude replaces pyright's defaults, so they have to be repeated
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
     "docs",
     "build",
 ]
