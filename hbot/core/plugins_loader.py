@@ -17,7 +17,7 @@
 import importlib.util
 import inspect
 import logging
-from collections.abc import Iterable
+from collections.abc import Awaitable, Iterable
 from os import PathLike
 from pathlib import Path
 from typing import cast
@@ -31,7 +31,10 @@ from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 logger = logging.getLogger(__name__)
 
 
-async def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -> dict[BasePlugin, list[Handler]]:
+async def load_plugins(
+    app: Client,
+    plugins_dir: PathLike[str] | str = PLUGINS_DIR,
+) -> dict[BasePlugin, list[Handler]]:
     """This function loads every plugin under hbot/plugins/* (:ref:`PLUGINS_DIR`) directory.
 
     Note that this loader will look for classes that inherits the :ref:`BasePlugin` abstract class,
@@ -40,19 +43,15 @@ async def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -
     Args:
         app: The :ref:`Client` instance of pyrogram.
         plugins_dir: :ref:`PathLike` object of the directory containing plugins to load.
-            Defaults to :py:attr:`hbot.PLUGINS_DIR`.
+            Defaults to :ref:`PLUGINS_DIR`.
 
     Returns:
         A dictionary where the instance of the subclass of :ref:`BasePlugin` is the key, and the
         list of the handlers returned by the :py:meth:`hbot.core.base_plugin.BasePlugin.register_handlers`
         method is the value.
-
-    Raises:
-        ValueError: When the :py:meth:`hbot.core.base_plugin.BasePlugin.register_handlers` method does not
-        return list of handlers.
     """
     loaded: dict[BasePlugin, list[Handler]] = {}
-    plugins: Iterable[PathLike] = Path(plugins_dir).resolve().glob("*.py")
+    plugins: Iterable[Path] = Path(plugins_dir).resolve().glob("*.py")
 
     for file in plugins:
         if file.name.startswith("_"):
@@ -67,8 +66,8 @@ async def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -
             logger.error("could not load plugin '%s'", file.name)
             continue
 
-        module = importlib.util.module_from_spec(spec)  # type: ignore
-        spec.loader.exec_module(module)  # type:plugins ignore
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
 
         for attr_name in dir(module):
             attr = getattr(module, attr_name)
@@ -77,22 +76,19 @@ async def load_plugins(app: Client, plugins_dir: PathLike | str = PLUGINS_DIR) -
                 plugin_instance: BasePlugin = attr(app)
 
                 logger.info("calling register_handlers for plugin '%s'", attr.name)
-                handlers_or_coro = plugin_instance.register_handlers()
+                handlers_or_coro: RegisterHandlersResult | Awaitable[RegisterHandlersResult] = (
+                    plugin_instance.register_handlers()
+                )
 
-                # Check if the result is a coroutine and handle accordingly
+                reg_handlers_result: RegisterHandlersResult
                 if inspect.iscoroutine(handlers_or_coro):
                     logger.info("register_handlers is async for plugin '%s', awaiting it", attr.name)
-                    reg_handlers_result: RegisterHandlersResult = cast(RegisterHandlersResult, await handlers_or_coro)
+                    reg_handlers_result = cast(RegisterHandlersResult, await handlers_or_coro)
                 else:
                     logger.info("register_handlers is sync for plugin '%s'", attr.name)
-                    reg_handlers_result: RegisterHandlersResult = cast(RegisterHandlersResult, handlers_or_coro)
+                    reg_handlers_result = cast(RegisterHandlersResult, handlers_or_coro)
 
                 handlers = reg_handlers_result.handlers
-
-                if not isinstance(handlers, list):
-                    raise ValueError(
-                        "method register_handlers MUST return RegisterHandlerResult.handlers with type list[Handler]!"
-                    )
 
                 logger.info("registering %d handler(s) for plugin '%s'", len(handlers), attr.name)
                 for h in handlers:

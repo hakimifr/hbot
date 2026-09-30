@@ -36,7 +36,7 @@ license_header = """\
 """
 
 
-def add_license_header(file_path) -> bool:
+def add_license_header(file_path: Path) -> bool:
     with open(file_path, "r+") as f:
         content = f.read()
 
@@ -55,7 +55,8 @@ def main() -> None:
         if hidden_dirs.intersection(file.parents):
             continue
 
-        add_license_header(file) and print(f"-> Added license header to {file}")
+        if add_license_header(file):
+            print(f"-> Added license header to {file}")
 
 
 if __name__ == "__main__":

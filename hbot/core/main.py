@@ -25,6 +25,7 @@ from pyrogram import filters
 from pyrogram.client import Client
 from pyrogram.errors import SessionPasswordNeeded
 from pyrogram.handlers.handler import Handler
+from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.sync import idle
 from pyrogram.types import Message
 
@@ -77,12 +78,9 @@ async def generate_new_session(session_file: Path) -> None:
         await bot.send_message(int(BOTOWNERID), "enter the code sent by telegram")
 
         code_received: asyncio.Event = asyncio.Event()
-        code: str | None = None
+        received: dict[str, str] = {}
 
-        @bot.on_message(filters.text, group=1)
         async def code_handler(client: Client, message: Message) -> None:
-            nonlocal code
-
             if code_received.is_set():
                 return
 
@@ -92,32 +90,32 @@ async def generate_new_session(session_file: Path) -> None:
                 return
 
             assert message.text
-            code = b64decode(message.text).decode().strip()
+            received["code"] = b64decode(message.text).decode().strip()
             code_received.set()
 
+        bot.add_handler(MessageHandler(code_handler, filters.text), group=1)
+
         await wait_for_user_input(code_received, "code")
-        assert code is not None
+        code: str = received["code"]
 
         await bot.send_message(int(BOTOWNERID), "Enter 2fa password, or just type none")
 
         password_received: asyncio.Event = asyncio.Event()
-        password: str | None = None
 
-        @bot.on_message(filters.text, group=2)
         async def password_handler(client: Client, message: Message) -> None:
-            nonlocal password
-
             assert message.chat
             assert message.chat.id
             if message.chat.id != int(BOTOWNERID):
                 return
 
             assert message.text
-            password = b64decode(message.text).decode().strip()
+            received["password"] = b64decode(message.text).decode().strip()
             password_received.set()
 
+        bot.add_handler(MessageHandler(password_handler, filters.text), group=2)
+
         await wait_for_user_input(password_received, "2fa password")
-        assert password is not None
+        password: str = received["password"]
 
         try:
             await app.sign_in(PHONENUMBER, sent_code.phone_code_hash, code)

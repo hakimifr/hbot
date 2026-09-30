@@ -60,13 +60,14 @@ class BasePlugin(ABC):
 
     # There is no need to change the prefixes in the subclasses. This way, consistency is maintained
     # for every plugins. Unless there's a valid reason of doing so.
-    config = JsonDB(__name__, PERSIST_DIR)
+    config: JsonDB = JsonDB(__name__, PERSIST_DIR)
 
     config.read_database()
+    prefixes: list[str]
     if isinstance(config.data.get("prefixes"), list):
-        prefixes: list[str] = config.data.get("prefixes")  # type: ignore
+        prefixes = config.data["prefixes"]
     else:
-        prefixes: list[str] = ["."]
+        prefixes = ["."]
 
     # Allow other plugins to change the prefix
     config.close()
@@ -116,10 +117,9 @@ class BasePlugin(ABC):
         """
         assert message.from_user
         assert app.me
-        kwargs = {} if parse_mode is None else {"parse_mode": parse_mode}
         if message.from_user.id == app.me.id:
-            return await message.edit_text(text, **kwargs)
-        return await message.reply_text(text, **kwargs)
+            return await message.edit_text(text, parse_mode=parse_mode)
+        return await message.reply_text(text, parse_mode=parse_mode)
 
     async def is_user_admin(self, app: Client, chat: Chat, user: User) -> bool:
         """Return ``True`` if *user* is an administrator or the owner of *chat*.

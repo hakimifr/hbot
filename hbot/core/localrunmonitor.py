@@ -1,8 +1,9 @@
+import asyncio
 import logging
 import re
 import subprocess
+import threading
 import time
-from threading import Thread
 
 from pyrogram.client import Client
 
@@ -12,13 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 class LocalRunMonitor:
-    def __init__(self, app: Client):
-        self.thread = Thread(target=self.main_loop, daemon=True)
-        self.app = app
+    def __init__(self, app: Client) -> None:
+        self.thread: threading.Thread = threading.Thread(target=self.main_loop, daemon=True)
+        self.app: Client = app
+        self.loop: asyncio.AbstractEventLoop | None = None
 
     def start(self) -> None:
         if LOCALRUN:
             logger.info("bot is running locally. starting LocalRunMonitor")
+            self.loop = asyncio.get_running_loop()
             self.thread.start()
 
     # ruff: disable[S603,S607]
@@ -49,6 +52,10 @@ class LocalRunMonitor:
 
             if battery < 30:
                 logger.info("sending low battery message")
-                self.app.send_message(-1001155763792, "laptop battery level is low!")
+                if self.loop is not None:
+                    asyncio.run_coroutine_threadsafe(
+                        self.app.send_message(-1001155763792, "laptop battery level is low!"),
+                        self.loop,
+                    )
             else:
                 logger.info("battery is above threshold")

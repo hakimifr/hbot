@@ -78,9 +78,10 @@ class BsPlugin(BasePlugin):
             if key == "whitelist":
                 continue
 
-            chat: dict[str, Any] = db.data.get(key)
-            if not isinstance(chat, dict):
+            if not isinstance(db.data.get(key), dict):
                 continue
+
+            chat: dict[str, Any] = db.data[key]
 
             if "word_list" in chat:
                 logger.warning("chat %s: removing legacy 'word_list' key from scores dict", key)
@@ -211,7 +212,8 @@ class BsPlugin(BasePlugin):
         async with NamedTemporaryFile("w+", suffix=".json") as f:
             await f.write(json.dumps(scores, indent=2))
             await f.flush()
-            await message.reply_document(f.wrapped.name)
+            # pyrogram's progress callback annotations are incomplete
+            await message.reply_document(f.wrapped.name)  # pyright: ignore[reportUnknownMemberType]
 
     async def train_from_history(self, app: Client, message: Message, limit: int = 0) -> None:
         """Train from the chat's message history.

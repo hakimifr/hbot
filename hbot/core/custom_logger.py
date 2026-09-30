@@ -6,6 +6,7 @@ import threading
 from dataclasses import dataclass
 from logging import LogRecord
 from logging.handlers import QueueHandler
+from typing import Any, override
 
 from rich.console import Console
 from rich.markup import escape
@@ -33,6 +34,7 @@ class DroppingQueueHandler(QueueHandler):
         super().__init__(q)
         self.dropped: int = 0
 
+    @override
     def emit(self, record: LogRecord) -> None:
         try:
             self.enqueue(self.prepare(record))
@@ -42,10 +44,10 @@ class DroppingQueueHandler(QueueHandler):
 
 class Logger:
     def __init__(self) -> None:
-        self.thread = threading.Thread(target=self.run_loop, daemon=True)
         self.queue: queue.Queue[LogRecord | None] = queue.Queue(maxsize=QUEUE_MAXSIZE)
-        self.queue_handler = DroppingQueueHandler(self.queue)
-        self.console = Console(force_terminal=True, soft_wrap=True)
+        self.queue_handler: DroppingQueueHandler = DroppingQueueHandler(self.queue)
+        self.thread: threading.Thread = threading.Thread(target=self.run_loop, daemon=True)
+        self.console: Console = Console(force_terminal=True, soft_wrap=True)
 
         self.thread.start()
         lg.info("logger thread started")
@@ -106,17 +108,16 @@ class Logger:
                     if log_data is None:
                         break
 
-                    if isinstance(log_data, LogRecord):
-                        level_colour = self.level_colour[log_data.levelno]
-                        time = datetime.datetime.now(tz=datetime.UTC)
-                        prefix = (
-                            f"[{time}] [{level_colour}]{log_data.levelname}[/{level_colour}] "
-                            f"[grey]<{log_data.filename}>[/grey] {log_data.name}: "
-                        )
-                        msg = (prefix + escape(log_data.getMessage())).replace("\n", f"\n{prefix}")
-                        self.console.print(msg)
-                        f.write(Text.from_markup(msg).plain + "\n")
-                        f.flush()
+                    level_colour = self.level_colour[log_data.levelno]
+                    time = datetime.datetime.now(tz=datetime.UTC)
+                    prefix = (
+                        f"[{time}] [{level_colour}]{log_data.levelname}[/{level_colour}] "
+                        f"[grey]<{log_data.filename}>[/grey] {log_data.name}: "
+                    )
+                    msg = (prefix + escape(log_data.getMessage())).replace("\n", f"\n{prefix}")
+                    self.console.print(msg)
+                    f.write(Text.from_markup(msg).plain + "\n")
+                    f.flush()
                 finally:
                     self.queue.task_done()
                     self.report_dropped()
@@ -135,5 +136,5 @@ logger.setup_redirect()
 
 
 # ruff: disable[N802]
-def getLogger(*args) -> Logger:
+def getLogger(*args: Any) -> Logger:
     return logger

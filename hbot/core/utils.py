@@ -17,10 +17,15 @@
 """Shared utility helpers used across multiple plugins."""
 
 import typing
+from collections.abc import Mapping
 from dataclasses import fields, is_dataclass
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from _typeshed import DataclassInstance
 
 
-def _get_list_inner_type(t) -> type | None:
+def _get_list_inner_type(t: Any) -> type | None:
     """Returns the inner type of list[X], or None if not a list generic."""
     origin = typing.get_origin(t)
     if origin is list:
@@ -30,7 +35,7 @@ def _get_list_inner_type(t) -> type | None:
     return None
 
 
-def from_dict[T](cls: type[T], data: dict) -> T:
+def from_dict[T: "DataclassInstance"](cls: type[T], data: Mapping[str, Any]) -> T:
     """Recursively convert a plain dict into a dataclass instance.
 
     Supports nested dataclasses and ``list[SomeDataclass]`` fields.
@@ -38,17 +43,17 @@ def from_dict[T](cls: type[T], data: dict) -> T:
     existed in ``solat.py`` -- it has been consolidated here so every plugin
     can share a single, well-tested implementation.
     """
-    hints = typing.get_type_hints(cls)
-    kwargs = {}
-    for f in fields(cls):  # type: ignore[arg-type]
-        value = data[f.name]
-        actual_type = hints[f.name]
+    hints: dict[str, Any] = typing.get_type_hints(cls)
+    kwargs: dict[str, Any] = {}
+    for f in fields(cls):
+        value: Any = data[f.name]
+        actual_type: Any = hints[f.name]
 
         if is_dataclass(actual_type) and isinstance(actual_type, type):
             value = from_dict(actual_type, value)
         else:
-            inner = _get_list_inner_type(actual_type)
-            if inner is not None and is_dataclass(inner) and isinstance(inner, type):
+            inner: type | None = _get_list_inner_type(actual_type)
+            if inner is not None and is_dataclass(inner):
                 value = [from_dict(inner, item) for item in value]
 
         kwargs[f.name] = value
