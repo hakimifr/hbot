@@ -33,7 +33,7 @@ class PingPlugin(BasePlugin):
     description: str = "Just a simple .ping command to check if the bot is alive."
 
     def __init__(self, app: Client) -> None:
-        self.app: Client = app
+        super().__init__(app)
 
     async def ping(self, app: Client, message: Message) -> None:
         logger.info("ping, pong!")

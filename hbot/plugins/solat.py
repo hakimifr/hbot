@@ -16,6 +16,7 @@
 
 import json
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
 from itertools import chain, islice, repeat
 from textwrap import dedent
@@ -74,15 +75,15 @@ class SolatPlugin(BasePlugin):
     description: str = "Buat masa ni ada pasal waktu solat je, maybe more soon."
 
     def __init__(self, app: Client) -> None:
-        self.app: Client = app
+        super().__init__(app)
         self.http_client: AsyncClient = AsyncClient()
 
         db.read_database()
         self.zones_data: list[ZoneData] = [ZoneData(**z) for z in db.data.get("zones", [])]
         self.valid_jakimcode: list[str] = self._get_valid_jakimcode()
 
-    def _pad_list(self, iterable, size, padding=None) -> Any:
-        return islice(chain(iterable, repeat(padding)), size)
+    def _pad_list(self, iterable: Iterable[str], size: int, padding: Any = None) -> list[str | None]:
+        return list(islice(chain(iterable, repeat(padding)), size))
 
     def _get_valid_jakimcode(self) -> list[str]:
         if len(self.zones_data) == 0:
@@ -110,12 +111,13 @@ class SolatPlugin(BasePlugin):
     async def waktu_solat(self, app: Client, message: Message) -> None:
         await self._ensure_zones_cached()
 
-        splitmsg: list[str] = message.text.split(" ")  # type: ignore
+        assert message.text
+        splitmsg: list[str] = message.text.split(" ")
         if len(splitmsg) < 3:
             await message.edit_text("__syntax: .ws <zone> <day> [month] [year]__", parse_mode=ParseMode.MARKDOWN)
             return
 
-        args: list[str] = self._pad_list(splitmsg[1:], 4, None)
+        args: list[str | None] = self._pad_list(splitmsg[1:], 4, None)
         await message.edit_text("__loading...__")
 
         zone, day, month, year = args
@@ -124,7 +126,7 @@ class SolatPlugin(BasePlugin):
             await message.edit_text(f"invalid zone: {zone}, please refer .getzones")
             return
 
-        extra_data = {}
+        extra_data: dict[str, str] = {}
         if month:
             extra_data.update({"month": month})
         if year:
@@ -179,7 +181,7 @@ class SolatPlugin(BasePlugin):
         async with NamedTemporaryFile("w+", suffix=".json") as f:
             await f.write(json.dumps(db.data.get("zones"), indent=2))
             await f.flush()
-            await message.reply_document(f.wrapped.name)
+            await message.reply_document(f.wrapped.name)  # pyright: ignore[reportUnknownMemberType]
             await message.delete()
 
     @override

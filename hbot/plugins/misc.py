@@ -26,7 +26,7 @@ from pyrogram.types.messages_and_media import Message
 from hbot.core.base_plugin import BasePlugin, RegisterHandlersResult
 
 logger: logging.Logger = logging.getLogger(__name__)
-POLITE_TEXTS: tuple = (  # Source: https://gist.github.com/hakimifr/cbd17f193bae7a4874ec94ff52d1d410
+POLITE_TEXTS: tuple[str, ...] = (  # Source: https://gist.github.com/hakimifr/cbd17f193bae7a4874ec94ff52d1d410
     "Motherchod",
     "madarchod",
     "Bhosadike",
@@ -151,7 +151,7 @@ class MiscPlugin(BasePlugin):
     description: str = "Stuffs that don't really fit any other plugins."
 
     def __init__(self, app: Client) -> None:
-        self.app: Client = app
+        super().__init__(app)
 
     async def polite_text(self, app: Client, message: Message) -> None:
         choice = random.choice(POLITE_TEXTS)  # noqa: S311

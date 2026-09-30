@@ -25,7 +25,7 @@ import subprocess  # noqa S404
 import time
 from dataclasses import dataclass
 from functools import partial
-from typing import Never, cast, override
+from typing import Any, Never, cast, override
 
 from anyio import NamedTemporaryFile, Path
 from jsondb.database import JsonDB
@@ -61,32 +61,33 @@ class MaintenancePlugin(BasePlugin):
     description: str = "This plugin is for performing maintenance for the userbot, e.g. updating it."
 
     def __init__(self, app: Client) -> None:
-        self.app: Client = app
+        super().__init__(app)
 
     def _perform_restart(self, message: Message) -> Never:
         begin_time = time.time()
         db.data["begin_time"] = begin_time
-        db.data["chat_id"] = message.chat.id  # type: ignore
+        assert message.chat
+        db.data["chat_id"] = message.chat.id
         db.data["message_id"] = message.id
         db.data["restart"] = True
         db.write_database()
 
-        # cleanup
-        atexit._run_exitfuncs()
+        # cleanup. stdlib has no public API to trigger exit handlers manually.
+        atexit._run_exitfuncs()  # pyright: ignore[reportPrivateUsage]
 
         python_path: str | None = shutil.which("python3")
         if not python_path:
             raise RuntimeError("cannot find python3 executable")
         os.execl(python_path, "python3", "-m", "hbot")  # noqa: S606
 
-    async def _run_subprocess(self, cmd: list[str]) -> subprocess.CompletedProcess:
+    async def _run_subprocess(self, cmd: list[str]) -> subprocess.CompletedProcess[str]:
         """Run *cmd* in a thread-pool executor and return the completed process.
 
         This eliminates the repeated ``partial(subprocess.run, ...) +
         run_in_executor`` boilerplate that previously appeared in both
         ``update()`` and ``shell()``.
         """
-        partial_func = partial(subprocess.run, cmd, capture_output=True)
+        partial_func = partial(subprocess.run, cmd, capture_output=True, text=True)
         return await asyncio.get_running_loop().run_in_executor(None, partial_func)
 
     async def restart(self, app: Client, message: Message) -> None:
@@ -112,11 +113,12 @@ class MaintenancePlugin(BasePlugin):
 
             result = await self._run_subprocess([git_path, "pull", "--rebase"])
             if result.returncode != 0:
-                logger.error("git pull failed with return code %d: %s", result.returncode, result.stderr.decode())
-                await message.edit_text(f"__error when running git pull__, {str(result.stderr.decode())}")
+                error_output = result.stderr or ""
+                logger.error("git pull failed with return code %d: %s", result.returncode, error_output)
+                await message.edit_text(f"__error when running git pull__, {error_output}")
                 return
 
-            if result.stdout.decode() == "Already up to date.\n":
+            if result.stdout == "Already up to date.\n":
                 logger.info("bot is already up to date")
                 await message.edit_text("__bot is already up to date__")
                 return
@@ -128,14 +130,14 @@ class MaintenancePlugin(BasePlugin):
 
             if check_result.returncode == 0:
                 diff_result = await self._run_subprocess([git_path, "diff", "HEAD@{1}", "HEAD"])
-                git_diff = diff_result.stdout.decode() if diff_result.returncode == 0 else "Could not get diff"
+                git_diff = (diff_result.stdout or "") if diff_result.returncode == 0 else "Could not get diff"
                 logger.info("git diff retrieved, length: %d bytes", len(git_diff))
             else:
                 logger.warning("reflog not available or HEAD@{1} does not exist, skipping diff")
                 git_diff = "Git diff not available (reflog disabled or first commit)"
 
             await message.edit_text("__restarting the bot__")
-            db.data["update_changelog"] = result.stdout.decode()
+            db.data["update_changelog"] = result.stdout or ""
             db.data["git_diff"] = git_diff
             self._perform_restart(message)
 
@@ -146,8 +148,8 @@ class MaintenancePlugin(BasePlugin):
         logger.info("executing shell command: %s", command)
         result = await self._run_subprocess([sh_path, "-c", command])
 
-        stdout: str = result.stdout.decode()
-        stderr: str = result.stderr.decode()
+        stdout: str = result.stdout or ""
+        stderr: str = result.stderr or ""
 
         output = f"command: `{command}`\nstdout:```\n{stdout}```\n\nstderr:```\n{stderr}\n```"
 
@@ -168,7 +170,9 @@ class MaintenancePlugin(BasePlugin):
                 await f.flush()
 
                 logger.info("uploading shell output to file: %s", f.wrapped.name)
-                await message.reply_document(f.wrapped.name, caption=f"__output of:__ `{command}`")
+                await message.reply_document(  # pyright: ignore[reportUnknownMemberType]
+                    f.wrapped.name, caption=f"__output of:__ `{command}`"
+                )
                 logger.info("shell output file uploaded successfully")
 
     async def getlog(self, app: Client, message: Message) -> None:
@@ -232,10 +236,10 @@ class MaintenancePlugin(BasePlugin):
                         await ff.write(line)
                     await ff.flush()
                     logger.info("uploading filtered log file")
-                    await message.reply_document(ff.wrapped.name)
+                    await message.reply_document(ff.wrapped.name)  # pyright: ignore[reportUnknownMemberType]
             else:
                 logger.info("uploading full log file")
-                await message.reply_document(f.wrapped.name)
+                await message.reply_document(f.wrapped.name)  # pyright: ignore[reportUnknownMemberType]
 
         logger.info("finished")
         await message.edit_text("__done__")
@@ -317,7 +321,7 @@ class MaintenancePlugin(BasePlugin):
             logger.info("attempting to finish restart")
             task = loop.create_task(self.app.connect())
 
-            def done_callback(*args, **kwargs) -> None:
+            def done_callback(*args: Any, **kwargs: Any) -> None:
                 update_text = (
                     f"__bot{' updated and ' if update_changelog else ' '}restarted successfully, took "
                     f"{restart_time_delta:.2f}s__\n"
@@ -339,7 +343,7 @@ class MaintenancePlugin(BasePlugin):
                                 await f.write(git_diff)
                                 await f.flush()
                                 logger.info("uploading diff file: %s", f.wrapped.name)
-                                await self.app.send_document(
+                                await self.app.send_document(  # pyright: ignore[reportUnknownMemberType]
                                     db.data["chat_id"], f.wrapped.name, caption="__git diff after update__"
                                 )
                                 logger.info("diff file uploaded successfully")

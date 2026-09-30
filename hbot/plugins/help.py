@@ -15,7 +15,7 @@
 # Copyright (c) 2026, Firdaus Hakimi <hakimifirdaus944@gmail.com>
 
 import logging
-from typing import cast, override
+from typing import Any, cast, override
 
 from pyrogram import filters
 from pyrogram.client import Client
@@ -34,7 +34,7 @@ class MyPlugin(BasePlugin):
     description: str = "Return bot usage."
 
     def __init__(self, app: Client) -> None:
-        self.app: Client = app
+        super().__init__(app)
 
     async def help(self, app: Client, message: Message) -> None:
         logger.info("generating help text for loaded plugins")
@@ -49,19 +49,19 @@ class MyPlugin(BasePlugin):
             help_string += f"**📦 {plugin.name}**\n"
             help_string += f"__{plugin.description}__\n"
 
-            commands = []
+            commands: list[str] = []
             for h in handlers:
-                a = []
+                a: list[Any] = []
                 if b := getattr(h.filters, "base", None):
                     a.append(b)
                 if b := getattr(h.filters, "other", None):
                     a.append(b)
                 if not getattr(h.filters, "base", None) and not getattr(h.filters, "other", None):
                     a.append(h.filters)
-                for x in a:  # type: ignore
+                for x in a:
                     if type(x).__name__ == "CommandFilter":
-                        x.commands = cast(set, x.commands)
-                        for cmd in x.commands:
+                        command_set: set[str] = cast("set[str]", x.commands)
+                        for cmd in command_set:
                             logger.info("found command '%s' for plugin '%s'", cmd, plugin.name)
                             commands.append(f"  • `{cmd}`")
 

@@ -19,7 +19,7 @@ import logging
 import random
 import time
 from datetime import datetime, timedelta
-from typing import override
+from typing import Any, override
 
 from jsondb.database import JsonDB
 from pyrogram.client import Client
@@ -63,32 +63,36 @@ class CaptchaPlugin(BasePlugin):
     description: str = "Require new members to solve a 6-digit captcha."
 
     def __init__(self, app: Client) -> None:
-        self.app = app
+        super().__init__(app)
 
         loop = asyncio.get_event_loop()
         scheduled_count = 0
 
-        for chat_id_str, users in db.data.items():
+        for chat_id_str in list(db.data):
             if not chat_id_str.lstrip("-").isdigit():
                 continue
 
-            if not isinstance(users, dict):
+            if not isinstance(db.data.get(chat_id_str), dict):
                 continue
 
-            for user_id_str, payload in users.items():
+            chat: dict[str, Any] = db.data[chat_id_str]
+
+            for user_id_str in list(chat):
                 if user_id_str == FAILURE_TRACKER_KEY:
                     continue
 
                 if not user_id_str.lstrip("-").isdigit():
                     continue
 
-                if not isinstance(payload, dict):
+                if not isinstance(chat.get(user_id_str), dict):
                     continue
 
-                if "expires_at" not in payload:
+                record: dict[str, Any] = chat[user_id_str]
+
+                if "expires_at" not in record:
                     continue
 
-                remaining = payload["expires_at"] - time.time()
+                remaining: float = record["expires_at"] - time.time()
 
                 if remaining < 0:
                     remaining = 0
@@ -104,50 +108,46 @@ class CaptchaPlugin(BasePlugin):
 
         logger.info("Captcha plugin initialized; restored %d pending kicker tasks", scheduled_count)
 
-    def _get_failures_bucket(self, chat_id: int, *, create: bool = False) -> dict | None:
+    def _get_failures_bucket(self, chat_id: int, *, create: bool = False) -> dict[str, Any] | None:
         chat_key = str(chat_id)
-        chat = db.data.get(chat_key)
 
-        if chat is None:
+        if not isinstance(db.data.get(chat_key), dict):
             if not create:
                 return None
             db.data[chat_key] = {}
-            chat = db.data[chat_key]
 
-        if not isinstance(chat, dict):
-            return None
+        chat: dict[str, Any] = db.data[chat_key]
 
-        failures = chat.get(FAILURE_TRACKER_KEY)
-
-        if failures is None:
+        failures_raw: Any = chat.get(FAILURE_TRACKER_KEY)
+        if failures_raw is None:
             if not create:
                 return None
             chat[FAILURE_TRACKER_KEY] = {}
-            failures = chat[FAILURE_TRACKER_KEY]
-
-        if not isinstance(failures, dict):
+        elif not isinstance(failures_raw, dict):
             return None
 
+        failures: dict[str, Any] = chat[FAILURE_TRACKER_KEY]
         return failures
 
     def _increment_consecutive_failures(self, chat_id: int, user_id: int) -> int:
-        failures = self._get_failures_bucket(chat_id, create=True)
+        failures: dict[str, Any] | None = self._get_failures_bucket(chat_id, create=True)
         assert failures is not None
 
         user_key = str(user_id)
-        failures[user_key] = int(failures.get(user_key, 0)) + 1
+        count: int = int(failures.get(user_key, 0)) + 1
+        failures[user_key] = count
         db.write_database()
         logger.info(
             "Incremented consecutive failures to %d for user %d in chat %d",
-            failures[user_key],
+            count,
             user_id,
             chat_id,
         )
 
-        return failures[user_key]
+        return count
 
     def _reset_consecutive_failures(self, chat_id: int, user_id: int) -> None:
-        failures = self._get_failures_bucket(chat_id)
+        failures: dict[str, Any] | None = self._get_failures_bucket(chat_id)
         if failures is None:
             return
 
@@ -155,8 +155,10 @@ class CaptchaPlugin(BasePlugin):
         db.write_database()
         logger.info("Reset consecutive failures for user %d in chat %d", user_id, chat_id)
 
-    def _get_user_record(self, chat_id: int, user_id: int) -> dict | None:
-        return db.data.get(str(chat_id), {}).get(str(user_id))
+    def _get_user_record(self, chat_id: int, user_id: int) -> dict[str, Any] | None:
+        chat: Any = db.data.get(str(chat_id), {})
+        record: dict[str, Any] | None = chat.get(str(user_id))
+        return record
 
     def _save_user_record(
         self,
@@ -213,7 +215,7 @@ class CaptchaPlugin(BasePlugin):
         )
         await asyncio.sleep(after)
 
-        user_record = self._get_user_record(chat_id, user_id)
+        user_record: dict[str, Any] | None = self._get_user_record(chat_id, user_id)
 
         if user_record is None:
             logger.info(
@@ -223,7 +225,7 @@ class CaptchaPlugin(BasePlugin):
             )
             return
 
-        captcha_message_id = user_record.get("challenge_message_id")
+        captcha_message_id: Any = user_record.get("challenge_message_id")
         assert isinstance(captcha_message_id, int)
 
         try:
@@ -325,7 +327,7 @@ class CaptchaPlugin(BasePlugin):
                 logger.info("Skipping captcha for bot user %d in chat %d", user.id, chat_id)
                 continue
 
-            user_record = self._get_user_record(chat_id, user.id)
+            user_record: dict[str, Any] | None = self._get_user_record(chat_id, user.id)
             if user_record and user_record.get("expires_at", 0) - time.time() > 0:
                 logger.info("will not re-trigger captcha since user's captcha duration is still valid")
                 continue
@@ -382,7 +384,7 @@ class CaptchaPlugin(BasePlugin):
         chat_id = message.chat.id
         user_id = message.from_user.id
 
-        record = self._get_user_record(chat_id, user_id)
+        record: dict[str, Any] | None = self._get_user_record(chat_id, user_id)
         if record is None:
             return
 

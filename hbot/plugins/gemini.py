@@ -86,7 +86,7 @@ class Gemini(BasePlugin):
     description: str = "Plugin for Gemini"
 
     def __init__(self, app: Client) -> None:
-        self.app: Client = app
+        super().__init__(app)
 
     async def _respond(self, app: Client, message: Message, text: str, edit: bool = False) -> Message:
         current_frame = inspect.currentframe()
@@ -107,7 +107,8 @@ class Gemini(BasePlugin):
             logger.error("api key for gemini is not set, please export GEMINI_API_KEY")
             return
 
-        parts = message.text.split(maxsplit=1)  # type: ignore
+        assert message.text
+        parts = message.text.split(maxsplit=1)
         if len(parts) > 1:
             prompt = parts[1]
             await message.edit("Asking..")
@@ -126,13 +127,14 @@ class Gemini(BasePlugin):
         else:
             await message.edit_text("__please provide a prompt!__")
 
-    async def ask_gemini(self, text_to_be_ask) -> GeminiResult:
+    async def ask_gemini(self, text_to_be_ask: str) -> GeminiResult:
         api_key = os.getenv(key="GEMINI_API_KEY")
         client = genai.Client(api_key=api_key)
         config = types.GenerateContentConfig(temperature=1.0)
 
         try:
-            response = await client.aio.models.generate_content(
+            # google-genai's overloads leave generate_content partially untyped here
+            response = await client.aio.models.generate_content(  # pyright: ignore[reportUnknownMemberType]
                 model="gemini-2.5-flash", contents=text_to_be_ask, config=config
             )
             if response.text is None:

@@ -18,7 +18,7 @@ class MyPlugin(BasePlugin):
     description: str = "Plugin used to manipulate text. Shuffle, get unicode data, etc."
 
     def __init__(self, app: Client) -> None:
-        self.app: Client = app
+        super().__init__(app)
 
     async def unicode(self, app: Client, message: Message) -> None:
         assert message.reply_to_message

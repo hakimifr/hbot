@@ -29,7 +29,7 @@ class MyPlugin(BasePlugin):
     prefixes.append("/")
 
     def __init__(self, app: Client) -> None:
-        self.app: Client = app
+        super().__init__(app)
 
     async def _respond(self, app: Client, message: Message, text: str) -> Message:
         assert message.from_user
@@ -49,9 +49,9 @@ class MyPlugin(BasePlugin):
         try:
             chosen_gif: FileId = random.choice(komaru_gifs)  # noqa: S311
             if message.reply_to_message:
-                await message.reply_to_message.reply_animation(chosen_gif)
+                await message.reply_to_message.reply_animation(chosen_gif)  # pyright: ignore[reportUnknownMemberType]
             else:
-                await message.reply_animation(chosen_gif)
+                await message.reply_animation(chosen_gif)  # pyright: ignore[reportUnknownMemberType]
         except FileReferenceExpired:
             logger.warning("file reference expired! rescanning automatically")
             await self._respond(app, message, "__file reference expired, rescanning__")

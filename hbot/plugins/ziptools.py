@@ -41,9 +41,9 @@ class MyPlugin(BasePlugin):
     description: str = "Plugin with various tools to work with zip and tar archives."
 
     def __init__(self, app: Client) -> None:
-        self.app: Client = app
+        super().__init__(app)
 
-    async def progress_logger(self, current: int, total: int):
+    async def progress_logger(self, current: int, total: int) -> None:
         logger.info("zip download progress: %s/%s (%s)", current, total, (current / total) * 100)
 
     # -------------------------------------------------------------------------
@@ -128,7 +128,9 @@ class MyPlugin(BasePlugin):
                 )
                 await tf.write(plain_text)
                 await tf.flush()
-                await message.reply_document(tf.wrapped.name, caption=caption)
+                await message.reply_document(  # pyright: ignore[reportUnknownMemberType]
+                    tf.wrapped.name, caption=caption
+                )
 
     # -------------------------------------------------------------------------
     # Command handlers
@@ -154,7 +156,9 @@ class MyPlugin(BasePlugin):
 
         async with NamedTemporaryFile("w+b", suffix=".zip") as f, TemporaryDirectory() as d:
             logger.info("downloading zip to temp file, name = '%s'", f.wrapped.name)
-            await app.download_media(document, f.wrapped.name, progress=self.progress_logger)
+            await app.download_media(  # pyright: ignore[reportUnknownMemberType]
+                document, f.wrapped.name, in_memory=False, progress=self.progress_logger
+            )
 
             logger.info("checking zip file validity")
             if not await loop.run_in_executor(None, is_zipfile, f.wrapped.name):
@@ -206,7 +210,7 @@ class MyPlugin(BasePlugin):
                     continue
 
                 logger.info("uploading '%s'", file.as_posix())
-                await message.reply_document(file.as_posix())
+                await message.reply_document(file.as_posix())  # pyright: ignore[reportUnknownMemberType]
 
             duration_unzip_and_upload = time.perf_counter() - start_time
             logger.info("unzip + upload took %s seconds", duration_unzip_and_upload)
@@ -223,7 +227,9 @@ class MyPlugin(BasePlugin):
 
         async with NamedTemporaryFile("w+b", suffix=".zip") as f:
             logger.info("downloading zip to temp file, name = '%s'", f.wrapped.name)
-            await app.download_media(document, f.wrapped.name, progress=self.progress_logger)
+            await app.download_media(  # pyright: ignore[reportUnknownMemberType]
+                document, f.wrapped.name, in_memory=False, progress=self.progress_logger
+            )
 
             logger.info("checking zip file validity")
             if not await loop.run_in_executor(None, is_zipfile, f.wrapped.name):
@@ -250,7 +256,9 @@ class MyPlugin(BasePlugin):
 
         async with NamedTemporaryFile("w+b", suffix=".tar") as f, TemporaryDirectory() as d:
             logger.info("downloading tar to temp file, name = '%s'", f.wrapped.name)
-            await app.download_media(document, f.wrapped.name, progress=self.progress_logger)
+            await app.download_media(  # pyright: ignore[reportUnknownMemberType]
+                document, f.wrapped.name, in_memory=False, progress=self.progress_logger
+            )
 
             logger.info("checking tar file validity")
             try:
@@ -283,7 +291,7 @@ class MyPlugin(BasePlugin):
                         continue
 
                     logger.info("uploading '%s'", file.as_posix())
-                    await message.reply_document(file.as_posix())
+                    await message.reply_document(file.as_posix())  # pyright: ignore[reportUnknownMemberType]
 
                 duration_total = time.perf_counter() - start_time
                 logger.info("tar extract + upload took %s seconds", duration_total)
@@ -303,7 +311,9 @@ class MyPlugin(BasePlugin):
 
         async with NamedTemporaryFile("w+b", suffix=".tar") as f:
             logger.info("downloading tar to temp file, name = '%s'", f.wrapped.name)
-            await app.download_media(document, f.wrapped.name, progress=self.progress_logger)
+            await app.download_media(  # pyright: ignore[reportUnknownMemberType]
+                document, f.wrapped.name, in_memory=False, progress=self.progress_logger
+            )
 
             logger.info("checking tar file validity")
             try:
