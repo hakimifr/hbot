@@ -9,7 +9,7 @@ dependencies = [
     "google>=3.0.0",
     "google-genai>=1.56.0",
     "httpx>=0.28.1",
-    "jsondb-hakimifr>=0.3.0",
+    "jsondb-hakimifr>=0.4.0",
     "kurigram>=2.2.15",
     "rich>=14.3.2",
     "tgcrypto>=1.2.5",
@@ -23,3 +23,22 @@ dev = [
     "sphinx>=9.1.0",
     "ty>=0.0.9",
 ]
+
+[tool.basedpyright]
+venvPath = "."
+venv = ".venv"
+exclude = [
+    "docs",
+    "build",
+]
+
+# reportUnusedCallResult: intentional ignored results (atexit.register, file
+#   writes, rich markup).
+# reportUnusedParameter: pyrogram handler signatures require (client, message).
+# reportAny / reportExplicitAny: JSON data from JsonDB is inherently Any.
+# reportImplicitStringConcatenation: used for long f-strings with rich markup.
+reportUnusedCallResult = false
+reportUnusedParameter = false
+reportAny = false
+reportExplicitAny = false
+reportImplicitStringConcatenation = false
