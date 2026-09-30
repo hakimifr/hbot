@@ -2,7 +2,6 @@ import datetime
 import inspect
 import logging
 import queue
-import re
 import threading
 from dataclasses import dataclass
 from logging import LogRecord
@@ -16,6 +15,8 @@ lg: logging.Logger = logging.getLogger(__name__)
 
 logging.basicConfig(level=logging.INFO)
 
+QUEUE_MAXSIZE = 10_000
+
 
 @dataclass(frozen=True)
 class CalleeInfo:
@@ -25,10 +26,25 @@ class CalleeInfo:
     lineno: int
 
 
+class DroppingQueueHandler(QueueHandler):
+    """QueueHandler that counts and drops records instead of erroring when the queue is full."""
+
+    def __init__(self, q: queue.Queue[LogRecord | None]) -> None:
+        super().__init__(q)
+        self.dropped: int = 0
+
+    def emit(self, record: LogRecord) -> None:
+        try:
+            self.enqueue(self.prepare(record))
+        except queue.Full:
+            self.dropped += 1
+
+
 class Logger:
     def __init__(self) -> None:
         self.thread = threading.Thread(target=self.run_loop, daemon=True)
-        self.queue = queue.Queue()
+        self.queue: queue.Queue[LogRecord | None] = queue.Queue(maxsize=QUEUE_MAXSIZE)
+        self.queue_handler = DroppingQueueHandler(self.queue)
         self.console = Console(force_terminal=True, soft_wrap=True)
 
         self.thread.start()
@@ -59,6 +75,28 @@ class Logger:
             lineno=lineno,
         )
 
+    def report_dropped(self) -> None:
+        """Log (once per batch) how many records were dropped because the queue was full."""
+        dropped = self.queue_handler.dropped
+        if not dropped:
+            return
+
+        self.queue_handler.dropped = 0
+        record = LogRecord(
+            name=lg.name,
+            level=logging.WARNING,
+            pathname=__file__,
+            lineno=0,
+            msg="dropped %d log records because the queue was full",
+            args=(dropped,),
+            exc_info=None,
+        )
+        try:
+            self.queue_handler.enqueue(record)
+        except queue.Full:
+            # The warning itself was dropped; keep it counted for the next report.
+            self.queue_handler.dropped += 1
+
     def run_loop(self) -> None:
         with open("bot.log", "a+") as f:
             while True:
@@ -75,21 +113,21 @@ class Logger:
                             f"[{time}] [{level_colour}]{log_data.levelname}[/{level_colour}] "
                             f"[grey]<{log_data.filename}>[/grey] {log_data.name}: "
                         )
-                        msg = re.sub(r"^", prefix, escape(log_data.getMessage()), count=0).replace("\n", f"\n{prefix}")
+                        msg = (prefix + escape(log_data.getMessage())).replace("\n", f"\n{prefix}")
                         self.console.print(msg)
                         f.write(Text.from_markup(msg).plain + "\n")
                         f.flush()
                 finally:
                     self.queue.task_done()
+                    self.report_dropped()
 
     def setup_redirect(self) -> None:
         root = logging.getLogger()
-        queue_handler = QueueHandler(self.queue)
 
         for h in root.handlers:
             root.removeHandler(h)
 
-        root.addHandler(queue_handler)
+        root.addHandler(self.queue_handler)
 
 
 logger = Logger()
