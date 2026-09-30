@@ -19,7 +19,7 @@ import logging
 import time
 import traceback
 from dataclasses import asdict, dataclass
-from typing import cast, override
+from typing import Any, cast, override
 
 from jsondb.database import JsonDB
 from pyrogram import filters
@@ -50,7 +50,7 @@ class ModPlugin(BasePlugin):
     description: str = "Plugin for group/channel moderation"
 
     def __init__(self, app: Client) -> None:
-        self.app: Client = app
+        super().__init__(app)
 
     async def _is_myself_admin(self, app: Client, chat_id: int) -> bool:
         logger.info("checking admin status")
@@ -64,6 +64,7 @@ class ModPlugin(BasePlugin):
     async def purge(self, app: Client, message: Message) -> None:
         assert message.from_user
         assert message.chat
+        assert message.chat.id
 
         member = await message.chat.get_member(message.from_user.id)
         if member.status not in {ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER}:
@@ -80,10 +81,10 @@ class ModPlugin(BasePlugin):
             await self.respond(app, message, "__reply to a message!__")
             return
 
-        chat = cast(Chat, message.chat)
-        message.text = cast(str, message.text)
+        chat = message.chat
+        text = cast(str, message.text)
 
-        if chat.is_forum and "--force" not in message.text:
+        if chat.is_forum and "--force" not in text:
             await self.respond(
                 app,
                 message,
@@ -102,7 +103,7 @@ class ModPlugin(BasePlugin):
 
             logger.info("deleting messages: %s", message_ids)
             await app.delete_messages(
-                chat_id,  # type: ignore
+                chat_id,
                 message_ids,
             )
 
@@ -123,6 +124,9 @@ class ModPlugin(BasePlugin):
             await message.edit_text("__reply to a user message!__")
             return
 
+        assert message.chat
+        assert message.chat.id
+
         logger.info("attempting to add user to chat")
         target_user_id: int = message.reply_to_message.from_user.id
         target_full_name: str = message.reply_to_message.from_user.full_name
@@ -130,7 +134,7 @@ class ModPlugin(BasePlugin):
         try:
             await message.edit_text(f"__adding {target_full_name} to chat...__")
             logger.info("adding user %s (%s) to chat %s", target_full_name, target_user_id, message.chat.id)
-            await app.add_chat_members(message.chat.id, target_user_id)  # type: ignore
+            await app.add_chat_members(message.chat.id, target_user_id)
             logger.info("user added successfully")
             await message.edit_text(f"__added {target_full_name} to chat__")
             await asyncio.sleep(5)
@@ -154,6 +158,7 @@ class ModPlugin(BasePlugin):
         else:
             logger.info("getting chat ID for current chat")
             chat = message.chat
+            assert chat
             result = "**Chat ID Information**\n\n"
             result += f"**Title:** {chat.title or 'Private Chat'}\n"
             result += f"**ID:** `{chat.id}`\n"
@@ -174,7 +179,10 @@ class ModPlugin(BasePlugin):
 
         try:
             logger.info("fetching full user data for user ID: %s", user_id)
-            user = await app.get_users(user_id)
+            result = await app.get_users(user_id)
+            # get_users() is annotated as returning User | list[User]; a single
+            # ID is passed here so unwrap the list if one comes back.
+            user = result[0] if isinstance(result, list) else result
 
             info_text = "**\U0001f464 User Information**\n\n"
             info_text += f"**ID:** `{user.id}`\n"
@@ -233,7 +241,11 @@ class ModPlugin(BasePlugin):
 
     # TODO: check if this is PM and forbid this command from running
     async def kick(self, app: Client, message: Message) -> None:
-        if not await self.is_user_admin(app, message.chat, message.from_user):  # type: ignore
+        assert message.chat
+        assert message.chat.id
+        assert message.from_user
+
+        if not await self.is_user_admin(app, message.chat, message.from_user):
             await message.edit_text("__you are not an admin!__")
             return
 
@@ -241,9 +253,8 @@ class ModPlugin(BasePlugin):
             await message.edit_text("__please reply to a message__")
             return
 
-        assert message.chat is not None
-        assert message.chat.id is not None
-        assert message.reply_to_message.from_user is not None
+        assert message.reply_to_message
+        assert message.reply_to_message.from_user
 
         target_chat_id: int = message.chat.id
         target_user_id: int = message.reply_to_message.from_user.id
@@ -274,7 +285,10 @@ class ModPlugin(BasePlugin):
             await message.edit_text("__reply to a user message!__")
             return
 
-        await app.ban_chat_member(message.chat.id, message.reply_to_message.from_user.id)  # type: ignore
+        assert message.chat
+        assert message.chat.id
+
+        await app.ban_chat_member(message.chat.id, message.reply_to_message.from_user.id)
         await message.edit_text("__banned__")
         await asyncio.sleep(5)
         await message.delete()
@@ -284,7 +298,10 @@ class ModPlugin(BasePlugin):
             await message.edit_text("__reply to a user message!__")
             return
 
-        await app.unban_chat_member(message.chat.id, message.reply_to_message.from_user.id)  # type: ignore
+        assert message.chat
+        assert message.chat.id
+
+        await app.unban_chat_member(message.chat.id, message.reply_to_message.from_user.id)
         await message.edit_text("__unbanned__")
         await asyncio.sleep(5)
         await message.delete()
@@ -321,7 +338,9 @@ class ModPlugin(BasePlugin):
                 final_msg += f"__removed: {member.user.id}__\n"
             except FloodWait as e:
                 logger.warning("received floodwait: %d seconds", e.value)
-                await asyncio.sleep(e.value)  # type: ignore
+                # FloodWait.value is annotated loosely in kurigram; for
+                # FloodWait it is always the wait duration in seconds.
+                await asyncio.sleep(cast(int, e.value))
                 i -= 1
             except Exception as e:
                 logger.warning("cannot remove %d, reason: %s", member.user.id, str(e))
@@ -447,10 +466,11 @@ class ModPlugin(BasePlugin):
         chat_id = message.chat.id
         chat_id_str = str(chat_id)
 
-        if not block_db.data.get(chat_id_str):
+        if not isinstance(block_db.data.get(chat_id_str), dict):
             block_db.data.update({chat_id_str: asdict(BlockEntry(chat_id, [], [], []))})
 
-        entry = BlockEntry(**cast(dict, block_db.data.get(chat_id_str)))
+        entry_dict: dict[str, Any] = block_db.data[chat_id_str]
+        entry = BlockEntry(**entry_dict)
         if doc_type == "sticker" and block_whole_pack:
             assert message.reply_to_message.sticker
             entry.blocked_packs.append(message.reply_to_message.sticker.set_name)
@@ -506,7 +526,12 @@ class ModPlugin(BasePlugin):
             await self.respond(app, message, "__nothing is blocked here.__")
             return
 
-        entry = BlockEntry(**cast(dict, block_db.data.get(chat_id_str)))
+        if not isinstance(block_db.data.get(chat_id_str), dict):
+            await self.respond(app, message, "__corrupted blocklist entry.__")
+            return
+
+        entry_dict: dict[str, Any] = block_db.data[chat_id_str]
+        entry = BlockEntry(**entry_dict)
 
         try:
             if doc_type == "sticker" and unblock_whole_pack:
@@ -538,9 +563,9 @@ class ModPlugin(BasePlugin):
         assert message.chat.id
         assert message.from_user
         chat_id_str = str(message.chat.id)
-        raw_entry: dict | None = block_db.data.get(chat_id_str)
+        raw_entry: dict[str, Any] | None = block_db.data.get(chat_id_str)
 
-        if not raw_entry:
+        if not isinstance(raw_entry, dict):
             logger.info(
                 "no block entry for chat [id=%d, name=%s], ignore",
                 message.chat.id,

@@ -23,7 +23,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import asdict, dataclass
 from enum import Enum
 from functools import wraps
-from typing import Any, assert_never, cast, override
+from typing import Any, ClassVar, assert_never, cast, override
 
 from jsondb.database import JsonDB
 from pyrogram import filters
@@ -61,7 +61,7 @@ class RM6785ChannelId(Enum):
     Official = -1001384382397
 
 
-RM6785_CHANNEL_ID: RM6785ChannelId = RM6785ChannelId.Official
+rm6785_channel_id: RM6785ChannelId = RM6785ChannelId.Official
 RM6785_GROUP_ID: ChatId = -1001754321934
 RM6785_STICKER_ID: StickerId = "CAACAgUAAx0EX9CqtwACBvdpYhcQ4xFR18TbqiDxMasDZ4EWOQACLwQAAt4AAXFVonEmaEmbIrYeBA"
 TRIGGER_WHITELISTS: list[ChatId] = [
@@ -166,13 +166,13 @@ class AuthUtils:
 # stop ruff linting from caring about this.
 # ruff: disable[N806]
 class LintUtils:
-    kernel: bool
-    bold_title: bool
-    bold_notes: bool
-    bold_changelog: bool
-    bold_bugs: bool
-    bold_downloads: bool
-    hashtags: list[str]
+    kernel: ClassVar[bool] = False
+    bold_title: ClassVar[bool] = False
+    bold_notes: ClassVar[bool] = False
+    bold_changelog: ClassVar[bool] = False
+    bold_bugs: ClassVar[bool] = False
+    bold_downloads: ClassVar[bool] = False
+    hashtags: ClassVar[list[str]] = []
 
     @classmethod
     def lint_telegram_post(cls, text: str, entities: list[MessageEntity]) -> LintStatus:
@@ -234,12 +234,12 @@ class LintUtils:
             return "Hashtags:\n• No hashtags were found."
 
         (
-            TAG_BRAND,
+            _,
             TAG_BUILD,
             TAG_RELEASE_TYPE,
-            TAG_DEVICE,
-            TAG_ANDROID_VER,
-            TAG_RUI_VER,
+            tag_device,
+            tag_android_ver,
+            tag_rui_ver,
             *_,
         ) = cls.hashtags + [None] * 6
 
@@ -247,17 +247,17 @@ class LintUtils:
             "parsed hashtag values: build=%s release=%s device=%s android=%s rui=%s",
             TAG_BUILD,
             TAG_RELEASE_TYPE,
-            TAG_DEVICE,
-            TAG_ANDROID_VER,
-            TAG_RUI_VER,
+            tag_device,
+            tag_android_ver,
+            tag_rui_ver,
         )
 
         if TAG_BUILD == "KERNEL":
             cls.kernel = True
-            TAG_DEVICE, TAG_RUI_VER = cls.hashtags[2], cls.hashtags[3]
+            tag_device, tag_rui_ver = cls.hashtags[2], cls.hashtags[3]
             logger.info("kernel build detected")
-        elif TAG_ANDROID_VER and "RMX" in TAG_ANDROID_VER:
-            TAG_ANDROID_VER, TAG_RUI_VER = cls.hashtags[5], cls.hashtags[6]
+        elif tag_android_ver and "RMX" in tag_android_ver:
+            tag_android_ver, tag_rui_ver = cls.hashtags[5], cls.hashtags[6]
             logger.info("rmx-style hashtag order detected")
 
         RELEASE_TYPE = {"UNOFFICIAL", "OFFICIAL"}
@@ -274,19 +274,19 @@ class LintUtils:
             logger.info("invalid release type: %s", TAG_RELEASE_TYPE)
             error_message += "• Incorrect release type mentioned on the third hashtag. (OFFICIAL/UNOFFICIAL)\n"
 
-        if TAG_DEVICE not in DEVICE:
-            logger.info("invalid device: %s", TAG_DEVICE)
+        if tag_device not in DEVICE:
+            logger.info("invalid device: %s", tag_device)
             idx = "third" if cls.kernel else "fourth"
             error_message += f"• Incorrect device mentioned on the {idx} hashtag. ({'/'.join(DEVICE)})\n"
 
-        if not cls.kernel and TAG_ANDROID_VER not in ANDROID_VERSION:
-            logger.info("invalid android version: %s", TAG_ANDROID_VER)
+        if not cls.kernel and tag_android_ver not in ANDROID_VERSION:
+            logger.info("invalid android version: %s", tag_android_ver)
             error_message += (
                 "• Incorrect Android version mentioned on the fifth hashtag. (A10/A11/A12/A13/A14/A15/A16)\n"
             )
 
-        if TAG_RUI_VER not in RUI_VERSION:
-            logger.info("invalid rui version: %s", TAG_RUI_VER)
+        if tag_rui_ver not in RUI_VERSION:
+            logger.info("invalid rui version: %s", tag_rui_ver)
             error_message += "• Incorrect RealmeUI version mentioned on the last hashtag. (RUI1/RUI2/RUI3)\n"
 
         return f"Hashtags:\n{error_message}" if error_message else ""
@@ -341,12 +341,12 @@ class LintUtils:
 
         error_message = ""
 
-        try:
-            title = re.search(r".*\w+(?= +for).*", text).group()  # ty: ignore[possibly-missing-attribute]
-            logger.info("extracted title: %s", title)
-        except AttributeError:
+        title_match = re.search(r".*\w+(?= +for).*", text)
+        if title_match is None:
             logger.info("no title found")
             return "Title:\n• No title found."
+        title = title_match.group()
+        logger.info("extracted title: %s", title)
 
         if not cls.bold_title:
             logger.info("title is not bold")
@@ -530,7 +530,7 @@ class VoteUtils:
         return VoteStatus(True, "")
 
     @classmethod
-    def get_vote_count(cls, replied_message_id) -> int:
+    def get_vote_count(cls, replied_message_id: MessageId) -> int:
         return len(cls.db_vote.data.get(str(replied_message_id), []))
 
 
@@ -545,7 +545,7 @@ class UnfinishedPostData:
 
 @dataclass
 class PostData(UnfinishedPostData):
-    task: asyncio.Task
+    task: asyncio.Task[None]
 
 
 class PostUtils:
@@ -579,7 +579,7 @@ class PostUtils:
         cls.db_post.write_database()
 
     @classmethod
-    async def _on_start(cls, app: Client):
+    async def on_start(cls, app: Client) -> None:
         unfinished_posts: list[UnfinishedPostData] = [
             UnfinishedPostData(**u) for u in cls.db_post.data.get("unfinished_posts", [])
         ]
@@ -621,18 +621,19 @@ class PostUtils:
             new_feature_db.close()
 
     @staticmethod
-    async def _run_delayed(app: Client, reply_to_message: Message, delay_in_minutes: float = 5):
+    async def _run_delayed(app: Client, reply_to_message: Message, delay_in_minutes: float = 5) -> None:
         me = await app.get_me()
         try:
             await asyncio.sleep(delay_in_minutes * 60)
             await app.update_profile(first_name="RM6785 ROM Post", last_name="")
-            msg = await reply_to_message.copy(RM6785_CHANNEL_ID.value)
-            msg_2: Message = await msg.forward(RM6785_GROUP_ID)  # type: ignore
+            msg = await reply_to_message.copy(rm6785_channel_id.value)
+            forwarded: Message | list[Message] = await msg.forward(RM6785_GROUP_ID)
+            msg_2 = forwarded[0] if isinstance(forwarded, list) else forwarded
             await msg_2.pin()
         except asyncio.CancelledError:
             raise
         finally:
-            await app.update_profile(first_name=me.first_name, last_name=me.last_name)  # type: ignore
+            await app.update_profile(first_name=me.first_name or "", last_name=me.last_name or "")
 
     @classmethod
     async def post(
@@ -644,8 +645,8 @@ class PostUtils:
     ) -> None:
         me = await app.get_me()
         await app.update_profile(first_name="RM6785 ROM Post", last_name="")
-        msg = await app.send_sticker(RM6785_CHANNEL_ID.value, RM6785_STICKER_ID)
-        await app.update_profile(first_name=me.first_name, last_name=me.last_name)  # type: ignore
+        msg = await app.send_sticker(rm6785_channel_id.value, RM6785_STICKER_ID)  # pyright: ignore[reportUnknownMemberType]
+        await app.update_profile(first_name=me.first_name or "", last_name=me.last_name or "")
         msg = cast(Message, msg)
         chat = cast(Chat, msg.chat)
 
@@ -653,7 +654,7 @@ class PostUtils:
         cls.posts.append(
             PostData(
                 post_source_chat_id=cast(int, cast(Chat, reply_to_message.chat).id),
-                post_source_message_id=cast(int, reply_to_message.id),
+                post_source_message_id=reply_to_message.id,
                 post_confirmation_message_id=confirmation_message.id,  # shares same chat id as post source
                 sticker_chat_id=cast(int, chat.id),
                 sticker_message_id=msg.id,
@@ -698,8 +699,8 @@ class RM6785Plugin(BasePlugin):
     description: str = "A plugin to handle RM6785 ROM posts."
 
     def __init__(self, app: Client) -> None:
-        self.app: Client = app
-        self.authorised_users: dict[UserId, MessageId] = AuthUtils.get_authorised_users()
+        super().__init__(app)
+        self.authorised_users: dict[UserIdAuthDbKey, Name] = AuthUtils.get_authorised_users()
         self.prefixes: list[str] = [".", "/", ",", "!"]
 
     async def _respond(self, app: Client, message: Message, text: str) -> Message:
@@ -714,7 +715,7 @@ class RM6785Plugin(BasePlugin):
     def run_only_whitelist(whitelists: list[ChatId] = TRIGGER_WHITELISTS):
         def decorator(func: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
             @wraps(func)
-            async def wrapper(self, app: Client, message: Message) -> Any:
+            async def wrapper(self: "RM6785Plugin", app: Client, message: Message) -> Any:
                 chat_id: int = cast(int, cast(Chat, message.chat).id)
                 if chat_id not in whitelists:
                     logger.info("chat with id=%d is not in whitelist, skipping", chat_id)
@@ -787,7 +788,7 @@ class RM6785Plugin(BasePlugin):
             await self._respond(app, message, "__missing banner image__")
             return
 
-        reply_to_message = cast(Message, message.reply_to_message)
+        reply_to_message = message.reply_to_message
         caption = cast(str, reply_to_message.caption)
         caption_entities = cast(list[MessageEntity], reply_to_message.caption_entities)
         status: LintStatus = LintUtils.lint_telegram_post(caption, caption_entities)
@@ -816,7 +817,7 @@ class RM6785Plugin(BasePlugin):
             await self._respond(app, message, "__reply to a message please__")
             return
 
-        reply_to_message = cast(Message, message.reply_to_message)
+        reply_to_message = message.reply_to_message
         status = VoteUtils.vote(user.id, reply_to_message.id)
 
         if status.ok:
@@ -837,7 +838,7 @@ class RM6785Plugin(BasePlugin):
             await self._respond(app, message, "__reply to a message please__")
             return
 
-        reply_to_message = cast(Message, message.reply_to_message)
+        reply_to_message = message.reply_to_message
         status = VoteUtils.remove_vote(user.id, reply_to_message.id)
 
         if status.ok:
@@ -859,7 +860,7 @@ class RM6785Plugin(BasePlugin):
             await self._respond(app, message, "__reply to a message please__")
             return
 
-        reply_to_message = cast(Message, message.reply_to_message)
+        reply_to_message = message.reply_to_message
         vote_count = VoteUtils.get_vote_count(reply_to_message.id)
         duration: float = 5
 
@@ -926,24 +927,24 @@ class RM6785Plugin(BasePlugin):
 
     @run_only_whitelist()
     async def testmode(self, app: Client, message: Message) -> None:
-        global RM6785_CHANNEL_ID
+        global rm6785_channel_id
         user = cast(User, message.from_user)
 
-        if not AuthUtils.get_authorised_users().get(str(user.id)):  # type: ignore
+        if not AuthUtils.get_authorised_users().get(str(user.id)):
             await self._respond(app, message, "__you are not authorised__")
             return
 
-        match RM6785_CHANNEL_ID:
+        match rm6785_channel_id:
             case RM6785ChannelId.Official:
                 logger.info("switching to test mode (using test channel id = %d)", RM6785ChannelId.Test.value)
                 await self._respond(app, message, "__switching to test mode__")
-                RM6785_CHANNEL_ID = RM6785ChannelId.Test
+                rm6785_channel_id = RM6785ChannelId.Test
             case RM6785ChannelId.Test:
                 logger.info("switching to official mode (using channel id = %d)", RM6785ChannelId.Official.value)
                 await self._respond(app, message, "__switching to official mode__")
-                RM6785_CHANNEL_ID = RM6785ChannelId.Official
+                rm6785_channel_id = RM6785ChannelId.Official
             case _:
-                assert_never(RM6785_CHANNEL_ID)
+                assert_never(rm6785_channel_id)
 
     @run_only_whitelist()
     async def post_autodetector(self, app: Client, message: Message) -> None:
@@ -978,7 +979,7 @@ class RM6785Plugin(BasePlugin):
             message_ids.append(msg_id)
 
         try:
-            await app.delete_messages(RM6785_CHANNEL_ID.value, message_ids)
+            await app.delete_messages(rm6785_channel_id.value, message_ids)
             await self._respond(
                 app,
                 message,
@@ -989,7 +990,7 @@ class RM6785Plugin(BasePlugin):
 
     @override
     def register_handlers(self) -> RegisterHandlersResult:
-        asyncio.get_running_loop().create_task(PostUtils._on_start(self.app))
+        asyncio.get_running_loop().create_task(PostUtils.on_start(self.app))
         return RegisterHandlersResult(
             group=2,
             handlers=[
