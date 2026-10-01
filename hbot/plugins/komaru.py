@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import random
 from typing import override
@@ -20,6 +21,15 @@ KOMARU_CHANNEL_ID: ChatId = -1002033198247
 
 logger = logging.getLogger(__name__)
 komaru_db: JsonDB = JsonDB(__name__, PERSIST_DIR)
+
+
+async def deleter_helper(msg: Message, delete_after: float = 3) -> None:
+    await asyncio.sleep(delete_after)
+    await msg.delete()
+
+
+async def deleter(msg: Message, delete_after: float = 3) -> None:
+    await asyncio.create_task(deleter_helper(msg, delete_after))
 
 
 class MyPlugin(BasePlugin):
@@ -79,11 +89,12 @@ class MyPlugin(BasePlugin):
         komaru_db.data["komaru_gifs"] = list(komaru_gifs_raw.values())
         komaru_db.write_database()
         await msg_ch.delete()
-        await msg.edit_text(
+        m = await msg.edit_text(
             f"__**scanner:** {len(komaru_gifs_raw) + duplicates} komaru GIFs with "
             f"{duplicates} duplicate(s) found, "
             f"a total of {len(komaru_gifs_raw)} unique GIFs after deduplication__"
         )
+        await deleter(m, 3)
 
     @override
     def register_handlers(self) -> RegisterHandlersResult:
