@@ -428,7 +428,7 @@ class ModPlugin(BasePlugin):
             user_id = args[0]
             args.pop(0)
 
-        fban_reason = " ".join(args)
+        fban_reason = " ".join(args).strip() or "(no reason provided)"
 
         msg = await app.send_message(
             -1001754321934,
