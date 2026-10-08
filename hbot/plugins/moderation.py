@@ -436,6 +436,7 @@ class ModPlugin(BasePlugin):
             f"[{rf_requester_name}](tg://user?id={rf_requester_id}), "
             f"message link: {rf_request_link}, reason: {fban_reason}",
         )
+        assert msg is not None
         await message.reply_text(msg.link)
 
     async def sgblock(self, app: Client, message: Message, block_whole_pack: bool = False) -> None:
@@ -473,6 +474,7 @@ class ModPlugin(BasePlugin):
         entry = BlockEntry(**entry_dict)
         if doc_type == "sticker" and block_whole_pack:
             assert message.reply_to_message.sticker
+            assert message.reply_to_message.sticker.set_name is not None
             entry.blocked_packs.append(message.reply_to_message.sticker.set_name)
         if doc_type == "sticker":
             assert message.reply_to_message.sticker
@@ -536,6 +538,7 @@ class ModPlugin(BasePlugin):
         try:
             if doc_type == "sticker" and unblock_whole_pack:
                 assert message.reply_to_message.sticker
+                assert message.reply_to_message.sticker.set_name is not None
                 entry.blocked_packs.remove(message.reply_to_message.sticker.set_name)
             if doc_type == "sticker":
                 assert message.reply_to_message.sticker
