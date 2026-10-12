@@ -18,8 +18,9 @@ import asyncio
 import logging
 import time
 import traceback
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
-from typing import Any, cast, override
+from typing import Any, Final, cast, override
 
 from jsondb.database import JsonDB
 from pyrogram import filters
@@ -84,13 +85,27 @@ class ModPlugin(BasePlugin):
         chat = message.chat
         text = cast(str, message.text)
 
-        if chat.is_forum and "--force" not in text:
-            await self.respond(
-                app,
-                message,
-                "__using this command in topic-enabled chat is a bad idea, use --force to do it anyway.__",
+        if chat.is_forum:
+            logger.info("purging in topic mode")
+            target_thread_id: Final[int] = (
+                (
+                    1
+                    if (message.reply_to_message.message_thread_id > 62000)
+                    else message.reply_to_message.message_thread_id
+                )
+                if (message.reply_to_message.message_thread_id)
+                else 1
             )
-            return
+            logger.info("thread id = %s", target_thread_id)
+
+            should_delete: Callable[[Message], bool] = lambda m: (
+                (m.reply_to_message.message_thread_id == target_thread_id)
+                if target_thread_id != 1
+                else lambda m: bool(m) and not m.topic_message
+            )
+        else:
+            logger.info("purging in non-topic mode")
+            should_delete: Callable[[Message], bool] = lambda m: bool(m)
 
         logger.info("purging messages")
 
@@ -100,11 +115,14 @@ class ModPlugin(BasePlugin):
         for i in range(message.reply_to_message.id, message.id, 100):
             chat_id = message.chat.id
             message_ids = list(range(i, min(i + 100, message.id)))
+            messages = await app.get_messages(message.chat.id, message_ids)
+            messages_filtered = list(filter(should_delete, messages))
+            message_ids_filtered = [m.id for m in messages_filtered]
 
             logger.info("deleting messages: %s", message_ids)
             await app.delete_messages(
                 chat_id,
-                message_ids,
+                message_ids_filtered,
             )
 
         time_delta = time.perf_counter() - start_time
