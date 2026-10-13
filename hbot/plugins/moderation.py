@@ -450,7 +450,7 @@ class ModPlugin(BasePlugin):
 
         msg = await app.send_message(
             -1001754321934,
-            f"!{cmd} {user_id} relayfban/relayunfban requested by: "
+            f"!{cmd} {user_id} relay{cmd} requested by: "
             f"[{rf_requester_name}](tg://user?id={rf_requester_id}), "
             f"message link: {rf_request_link}, reason: {fban_reason}",
         )
