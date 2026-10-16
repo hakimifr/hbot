@@ -132,7 +132,9 @@ class ModPlugin(BasePlugin):
             if message.from_user.id != app.me.id:
                 app.loop.create_task(message.delete())
             amount_of_msgs = len(range(message.reply_to_message.id, message.id)) + 1
-            await self.respond(app, message, f"__purged! {amount_of_msgs} messages purged in {time_delta} seconds__")
+            await self.respond(
+                app, message, f"__purged! {amount_of_msgs} messages purged in {time_delta:.3f} seconds__"
+            )
         else:
             await message.delete()
 
