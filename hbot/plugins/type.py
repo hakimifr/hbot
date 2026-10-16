@@ -59,10 +59,14 @@ class ModPlugin(BasePlugin):
 
     async def edit(self, app: Client, message: Message) -> None:
         assert message.text
+        logger.info("original text: %s", message.text)
         args: list[str] = message.text.split(" ")
+        logger.info("args list: %s", args)
         args.pop(0)
+        logger.info("after cleared: %s", args)
 
         new_msg = " ".join(args)
+        logger.info("after joined: %s", new_msg)
         for i in range(2, len(new_msg), len(new_msg) + 2):
             t = "".join(next(batched(args, n=i, strict=False)))
             logger.info("typed text: %s", t)
