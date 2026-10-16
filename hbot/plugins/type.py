@@ -65,7 +65,7 @@ class ModPlugin(BasePlugin):
         new_msg = " ".join(args)
         for i in range(2, len(new_msg), len(new_msg) + 2):
             await message.edit_text("".join(next(batched(args, n=i, strict=False))))
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.7)
 
     @override
     def register_handlers(self) -> RegisterHandlersResult:
