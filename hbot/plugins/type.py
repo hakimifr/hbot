@@ -75,7 +75,7 @@ class ModPlugin(BasePlugin):
                 await message.edit_text(t)
             except MessageNotModified:
                 pass
-            await asyncio.sleep(0.7)
+            await asyncio.sleep(0.4)
 
     @override
     def register_handlers(self) -> RegisterHandlersResult:
