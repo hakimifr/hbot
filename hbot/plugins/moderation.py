@@ -46,6 +46,15 @@ class BlockEntry:
     blocked_gifs: list[str]
 
 
+async def deleter_helper(msg: Message, delete_after: float = 3) -> None:
+    await asyncio.sleep(delete_after)
+    await msg.delete()
+
+
+async def deleter(msg: Message, delete_after: float = 3) -> None:
+    await asyncio.create_task(deleter_helper(msg, delete_after))
+
+
 class ModPlugin(BasePlugin):
     name: str = "Moderation Plugin"
     description: str = "Plugin for group/channel moderation"
@@ -132,9 +141,12 @@ class ModPlugin(BasePlugin):
             if message.from_user.id != app.me.id:
                 app.loop.create_task(message.delete())
             amount_of_msgs = len(range(message.reply_to_message.id, message.id)) + 1
-            await self.respond(
-                app, message, f"__purged! {amount_of_msgs} messages purged in {time_delta:.3f} seconds__"
+            msg = await self.respond(
+                app,
+                message,
+                f"__purged! {amount_of_msgs} messages purged in {time_delta:.3f} seconds (this message will be deleted in 30 seconds)__",
             )
+            await deleter(msg, 30)
         else:
             await message.delete()
 
