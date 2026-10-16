@@ -68,7 +68,7 @@ class ModPlugin(BasePlugin):
         new_msg = " ".join(args)
         logger.info("after joined: %s", new_msg)
         for i in range(2, len(new_msg), len(new_msg) + 2):
-            t = "".join(next(batched(args, n=i, strict=False)))
+            t = "".join(next(batched(new_msg, n=i, strict=False)))
             logger.info("typed text: %s", t)
             await message.edit_text(t)
             await asyncio.sleep(0.7)
