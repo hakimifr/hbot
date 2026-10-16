@@ -23,6 +23,7 @@ from typing import override
 from jsondb.database import JsonDB
 from pyrogram import filters
 from pyrogram.client import Client
+from pyrogram.errors.exceptions import MessageNotModified
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types.messages_and_media import Message
 
@@ -70,7 +71,10 @@ class ModPlugin(BasePlugin):
         for i in range(2, len(new_msg) + 2, 2):
             t = "".join(next(batched(new_msg, n=i, strict=False)))
             logger.info("typed text: %s", t)
-            await message.edit_text(t)
+            try:
+                await message.edit_text(t)
+            except MessageNotModified:
+                pass
             await asyncio.sleep(0.7)
 
     @override
