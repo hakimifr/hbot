@@ -475,7 +475,7 @@ class ModPlugin(BasePlugin):
             f"message link: {rf_request_link}, reason: {fban_reason}",
         )
         assert msg is not None
-        await message.reply_text(msg.link)
+        await message.reply_text(f"{msg.link}\n**Peer Info:**\nname: {u.full_name}\nid: {u.id}\nusername: {u.username}")
 
     async def sgblock(self, app: Client, message: Message, block_whole_pack: bool = False) -> None:
         assert message.chat
