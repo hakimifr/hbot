@@ -460,6 +460,12 @@ class ModPlugin(BasePlugin):
             user_id = args[0]
             args.pop(0)
 
+        u = await app.get_users(user_id)
+        if not u:
+            logger.info("peer with username/id '%s' could not be found", user_id)
+            await message.reply_text(f"__peer '{user_id}' could not be resolved__")
+            return
+
         fban_reason = " ".join(args).strip() or "(no reason provided)"
 
         msg = await app.send_message(
