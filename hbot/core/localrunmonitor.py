@@ -17,6 +17,7 @@ class LocalRunMonitor:
         self.thread: threading.Thread = threading.Thread(target=self.main_loop, daemon=True)
         self.app: Client = app
         self.loop: asyncio.AbstractEventLoop | None = None
+        self.failure_count: int = 0
 
     def start(self) -> None:
         if LOCALRUN:
@@ -43,10 +44,17 @@ class LocalRunMonitor:
 
     def main_loop(self) -> None:
         while True:
+            if self.failure_count > 5:
+                logger.error(
+                    "failed to get device's battery percentage 5 times consecutively, stopping battery monitor loop. "
+                    "restart bot to rerun the loop."
+                )
+                break
             time.sleep(60 * 5)
             logger.debug("polling device battery level")
             battery = self.get_battery_percentage()
             if battery is None:
+                self.failure_count += 1
                 logger.error("could not get device's battery percentage")
                 continue
 
