@@ -193,6 +193,9 @@ class SolatPlugin(BasePlugin):
         if len(args) == 0:
             await message.reply_text("__provide keyword to search__")
             return
+
+        msg = await message.reply_text("__searching__")
+        assert msg
         joint_args: str = " ".join(args).lower()
 
         result: str = ""
@@ -203,7 +206,10 @@ class SolatPlugin(BasePlugin):
             if joint_args in negeri.lower() or joint_args in daerah.lower():
                 result += f"{jakim_code} - {negeri} - {daerah}\n"
 
-        await message.reply_text(f"__{result}__")
+        if result:
+            await msg.edit_text(f"__{result}__")
+        else:
+            await msg.edit_text("__no result found__")
 
     @override
     def register_handlers(self) -> RegisterHandlersResult:
