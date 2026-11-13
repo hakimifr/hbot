@@ -184,6 +184,27 @@ class SolatPlugin(BasePlugin):
             await message.reply_document(f.wrapped.name)  # pyright: ignore[reportUnknownMemberType]
             await message.delete()
 
+    async def search_zones(self, app: Client, message: Message) -> None:
+        await self._ensure_zones_cached()
+        assert message.text
+
+        args: list[str] = message.text.split(" ")
+        args.pop()
+        if len(args) == 0:
+            await message.reply_text("__provide keyword to search__")
+            return
+        joint_args: str = " ".join(args).lower()
+
+        result: str = ""
+        for entry in db.data.get("zones", []):
+            negeri = entry.get("negeri", "")
+            daerah = entry.get("daerah", "")
+            jakim_code = entry.get("jakimCode", "")
+            if joint_args in negeri.lower() or joint_args in daerah.lower():
+                result += f"{jakim_code} - {negeri} - {daerah}\n"
+
+        await message.reply_text(f"__{result}__")
+
     @override
     def register_handlers(self) -> RegisterHandlersResult:
         return RegisterHandlersResult(
@@ -195,6 +216,10 @@ class SolatPlugin(BasePlugin):
                 MessageHandler(
                     self.get_zones,
                     filters.command("getzones", prefixes=self.prefixes) & filters.me,
+                ),
+                MessageHandler(
+                    self.search_zones,
+                    filters.command(["searchzones", "sz"], prefixes=self.prefixes) & filters.me,
                 ),
             ]
         )
