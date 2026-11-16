@@ -23,7 +23,6 @@ import resource
 import shutil
 import subprocess  # noqa S404
 import time
-from dataclasses import dataclass
 from functools import partial
 from typing import Any, Never, cast, override
 
@@ -43,17 +42,6 @@ update_lock: asyncio.Lock = asyncio.Lock()
 
 # Configuration constants
 LOG_TRIM_LINES = 1000  # Number of lines to keep when trimming log file
-
-
-@dataclass(frozen=True)
-class LogJsonPayload:
-    ts: str
-    level: str
-    logger: str
-    lineno: int
-    funcname: str
-    msg: str
-    exc: str = ""
 
 
 class MaintenancePlugin(BasePlugin):
