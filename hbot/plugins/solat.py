@@ -189,7 +189,7 @@ class SolatPlugin(BasePlugin):
         assert message.text
 
         args: list[str] = message.text.split(" ")
-        args.pop()
+        args.pop(0)
         if len(args) == 0:
             await message.reply_text("__provide keyword to search__")
             return
@@ -203,8 +203,11 @@ class SolatPlugin(BasePlugin):
             negeri = entry.get("negeri", "")
             daerah = entry.get("daerah", "")
             jakim_code = entry.get("jakimCode", "")
-            if joint_args in negeri.lower() or joint_args in daerah.lower():
-                result += f"{jakim_code} - {negeri} - {daerah}\n"
+            logger.info("args: %s", joint_args)
+            if (joint_args in negeri.lower()) or (joint_args in daerah.lower()):
+                match = f"{jakim_code} - {negeri} - {daerah}\n"
+                logger.info("match found: %s", match)
+                result += match
 
         if result:
             await msg.edit_text(f"__{result}__")
